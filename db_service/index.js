@@ -3,7 +3,7 @@ const { join } = require("path"),
 
 const NPMRDS_CONFIG = require(join(__dirname, "npmrds.config.json")),
   HAZMIT_CONFIG = require(join(__dirname, "hazmit.config.json")),
-  TIG_CONFIG = require(join(__dirname,"tig.config.json"));
+  TIG_CONFIG = require(join(__dirname, "tig.config.json"));
 
 class DataBase {
   constructor(config) {

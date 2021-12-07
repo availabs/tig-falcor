@@ -1,4 +1,4 @@
-# avail-falcor
+# tig-falcor
 
 Requires Node v12 or higher.
 

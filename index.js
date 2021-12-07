@@ -19,7 +19,7 @@ const app = express();
 const {
   AUTH_URI,
   AUTH_PROJECT_NAME,
-  PORT = 4444,
+  PORT = 4445,
   NUM_WORKERS = 3
 } = require('./server-config');
 
