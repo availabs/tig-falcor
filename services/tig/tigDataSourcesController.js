@@ -1,0 +1,120 @@
+const db_service = require("../tig_db");
+
+const SOURCES_ATTRIBUTES = [
+    'id',
+    'name',
+    'description',
+    'current_version',
+    'data_starts_at',
+    'data_ends_at',
+    'origin_url',
+    'user_id',
+    'rows_updated_at',
+    'rows_updated_by_id',
+    'topic_area',
+    'source_type'
+]
+
+const VIEWS_ATTRIBUTES = [
+    'id',
+    'name',
+    'description',
+    'source_id',
+    'current_version',
+    'data_starts_at',
+    'data_ends_at',
+    'origin_url',
+    'user_id',
+    'rows_updated_at',
+    'rows_updated_by_id',
+    'topic_area',
+    'download_count',
+    'last_displayed_at',
+    'view_count',
+    'created_at',
+    'updated_at',
+    'columns',
+    'data_model',
+    'statistic_id',
+    'column_types',
+    'data_levels',
+    'value_name',
+    'column_labels',
+    'row_name',
+    'column_name',
+    'spatial_level',
+    'data_hierarchy',
+    'geometry_base_year',
+    'deleted_at',
+    'download_instructions',
+    'value_columns',
+    'short_description'
+]
+const tigDataSourcesByLength = () => {
+    const sql = `
+        SELECT count(id) as length
+        FROM public.sources
+    `;
+
+    return db_service.promise(sql)
+        .then(row => ({ ...row[0] }))
+}
+
+const tigDataSourcesByIndex = () =>{
+    const sql = `
+			SELECT id
+			FROM public.sources
+		`;
+    return db_service.promise(sql);
+}
+
+const tigDataSourcesById = (ids) =>{
+    const sql = `
+    SELECT * 
+    FROM public.sources
+    WHERE id IN ('${ids.join(`','`)}')
+    `;
+    return db_service.promise(sql);
+
+}
+
+const tigDataSourcesViewsByLength = (source_ids) => {
+    const sql = `
+        SELECT source_id,COUNT(1)
+        FROM public.views
+        WHERE source_id IN ('${source_ids.join(`','`)}')
+        GROUP BY source_id
+    `;
+
+    return db_service.promise(sql)
+
+}
+
+const tigDataSourcesViewsByIndex = (source_ids) =>{
+    const sql = `
+        SELECT id,source_id
+        FROM public.views
+        WHERE source_id IN ('${source_ids.join(`','`)}')
+		`;
+    return db_service.promise(sql);
+}
+
+const tigDataSourceViewsById = (source_ids,ids) =>{
+    const sql = `
+    SELECT * FROM public.views
+    WHERE  source_id IN ('${source_ids.join(`','`)}')
+    AND id IN  ('${ids.join(`','`)}')
+    `
+    return db_service.promise(sql);
+}
+
+module.exports = {
+    SOURCES_ATTRIBUTES,
+    VIEWS_ATTRIBUTES,
+    tigDataSourcesByLength,
+    tigDataSourcesByIndex,
+    tigDataSourcesById,
+    tigDataSourcesViewsByLength,
+    tigDataSourcesViewsByIndex,
+    tigDataSourceViewsById
+}

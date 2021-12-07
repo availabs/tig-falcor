@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# https://stackoverflow.com/questions/26858198/node-js-arguments-when-using-forever/26858371#26858371 (comment #3)
+
+forever start -c '/usr/local/n/versions/node/10.18.0/bin/node --max-old-space-size=32768 --max-http-header-size=150000' ~/avail-graph/prod/index.js

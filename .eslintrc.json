@@ -1,0 +1,36 @@
+{
+  "parserOptions": {
+    "ecmaVersion": 2018
+  },
+  "env": {
+    "es6": true,
+    "jest/globals": true,
+    "node": true
+  },
+  "extends": [
+    "plugin:jest/all",
+    "prettier"
+  ],
+  "plugins": [
+    "jest",
+    "prettier"
+  ],
+  "rules": {
+    "jest/no-hooks": "off",
+    "jest/no-disabled-tests": "warn",
+    "jest/no-focused-tests": "error",
+    "jest/no-identical-title": "error",
+    "jest/prefer-to-have-length": "warn",
+    "jest/valid-expect": "error",
+    "import/prefer-default-export": "off",
+    "camelcase": "off",
+    "no-console": "off",
+    "no-undef": "error",
+    "no-underscore-dangle": "off",
+    "no-param-reassign": "off",
+    "no-plusplus": "off",
+    "prettier/prettier": [
+      "error"
+    ]
+  }
+}

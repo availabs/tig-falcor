@@ -1,0 +1,14 @@
+node_modules/
+data_cache/
+*.env*
+*.config*
+config.py
+*.pyc
+*/__pycache__/
+tasks/tests
+npmrds_routes_data_cache/*
+
+*.tgz
+*.tar.gz
+*.txz
+*.tar.xz
