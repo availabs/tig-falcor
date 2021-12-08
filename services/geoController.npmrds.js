@@ -11,7 +11,7 @@ const codeColMappings = {
 };
 
 const getGeoCodesByGeoLevel = syntheticGeoKeys => {
-  const keys = _.uniq(syntheticGeoKeys).filter(k => {
+  const keys = uniq(syntheticGeoKeys).filter(k => {
     const isValid = k.split("|").length === 2;
     if (!isValid) {
       console.error(
@@ -146,7 +146,7 @@ const getTmcsForGeography = async (syntheticGeoKeys, years) => {
   const sql = Object.keys(geocodesByGeolevel).reduce((acc, geolevel) => {
     const geocodeCol = codeColMappings[geolevel];
 
-    const geocodes = _.uniq(geocodesByGeolevel[geolevel]);
+    const geocodes = uniq(geocodesByGeolevel[geolevel]);
 
     const whereClauses = geocodes.map(geocode => {
       parameters.push(geocode);
