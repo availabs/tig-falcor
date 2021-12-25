@@ -48,7 +48,8 @@ const VIEWS_ATTRIBUTES = [
     'deleted_at',
     'download_instructions',
     'value_columns',
-    'short_description'
+    'short_description',
+    'layer'
 ]
 const tigDataSourcesByLength = () => {
     const sql = `
@@ -108,6 +109,22 @@ const tigDataSourceViewsById = (source_ids,ids) =>{
     return db_service.promise(sql);
 }
 
+const tigLayerByViewId = (viewIds) =>{
+    const sql = `
+    SELECT * FROM public.views
+    WHERE id IN ('${viewIds.join(`','`)}')
+    `
+    return db_service.promise(sql);
+}
+
+const tigViewByLayer = (layer) =>{
+    const sql = `
+    SELECT distinct id, name, layer FROM public.views
+    WHERE layer IN ('${layer.join(`','`)}')
+    `
+    return db_service.promise(sql);
+}
+
 module.exports = {
     SOURCES_ATTRIBUTES,
     VIEWS_ATTRIBUTES,
@@ -116,5 +133,7 @@ module.exports = {
     tigDataSourcesById,
     tigDataSourcesViewsByLength,
     tigDataSourcesViewsByIndex,
-    tigDataSourceViewsById
+    tigDataSourceViewsById,
+    tigLayerByViewId,
+    tigViewByLayer
 }

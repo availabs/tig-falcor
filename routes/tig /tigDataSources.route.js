@@ -257,4 +257,56 @@ module.exports = [
             });
         },
     },
+    {
+        route: `tig.byViewId[{keys:view_ids}]['${VIEWS_ATTRIBUTES.join("','")}']`,
+        get: function(pathSet) {
+            const viewIds = pathSet.view_ids;
+            return TigDataSourcesService.tigLayerByViewId(viewIds).then((rows) => {
+                const result = [];
+                viewIds.forEach((id) => {
+                    const row = rows.reduce((a, c) => c.id.toString() === id.toString() ? c : a, null);
+
+                    if (!row) {
+                        result.push({
+                            path: ["tig", "byViewId", id],
+                            value: $atom(null),
+                        });
+                    } else {
+                        pathSet[3].forEach((attribute) => {
+                            result.push({
+                                path: ["tig", "byViewId", id, attribute,],
+                                value: $atom(row[attribute]),
+                            });
+                        });
+                    }
+                });
+                return result;
+            });
+        },
+    },
+    {
+        route: `tig.views.byLayer[{keys:layers}]`,
+        get: function(pathSet) {
+            const layers = pathSet.layers;
+            return TigDataSourcesService.tigViewByLayer(layers).then((rows) => {
+                const result = [];
+                layers.forEach((layer) => {
+                    const filteredRows = rows.filter(r => r.layer === layer);
+
+                    if (!filteredRows) {
+                        result.push({
+                            path: ["tig", "views", "byLayer", layer],
+                            value: $atom(null),
+                        });
+                    } else {
+                        result.push({
+                            path: ["tig", "views", "byLayer", layer],
+                            value: $atom(filteredRows),
+                        });
+                    }
+                });
+                return result;
+            });
+        },
+    },
 ];
