@@ -1,6 +1,6 @@
 const { uniq } = require('lodash');
 
-const db_service = require("./npmrds_db")
+const db_service = require("./tig_db")
 
 const codeColMappings = {
   STATE: "state_code",
@@ -193,7 +193,7 @@ const GEOM_TABLES = {
   county: "tl_2017_us_county",
   mpo: "mpo_boundaries",
   ua: "urban_area_boundaries",
-  region: "ny.nysdot_region_boundaries"
+  region: "nysdot_region_boundaries"
 }
 
 module.exports = {

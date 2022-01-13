@@ -1,6 +1,6 @@
 const { uniq } = require("lodash");
 
-const db_service = require("./npmrds_db");
+const db_service = require("./tig_db");
 
 const tmcMetadataColAliases = {
   length: "miles AS length",

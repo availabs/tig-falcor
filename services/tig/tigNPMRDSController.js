@@ -1,6 +1,6 @@
 const _ = require("lodash");
 
-const db_service = require("../npmrds_db");
+const db_service = require("../tig_db");
 
 async function tigNPMRDS(tmcs, month, year) {
   try {
