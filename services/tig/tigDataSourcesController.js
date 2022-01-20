@@ -125,6 +125,17 @@ const tigViewByLayer = (layer) =>{
     return db_service.promise(sql);
 }
 
+const tigACSbyViewID = (viewIDs) =>{
+    const sql = `
+        SELECT view_id, areas.name area, fips_code fips, value, base_value, "value"/NULLIF("base_value", 0) percentage, type
+        FROM public.comparative_facts c
+                 join areas
+                      on areas.id = area_id
+        where view_id IN ('${viewIDs.join(`','`)}')
+    `
+    return db_service.promise(sql);
+}
+
 module.exports = {
     SOURCES_ATTRIBUTES,
     VIEWS_ATTRIBUTES,
@@ -135,5 +146,6 @@ module.exports = {
     tigDataSourcesViewsByIndex,
     tigDataSourceViewsById,
     tigLayerByViewId,
-    tigViewByLayer
+    tigViewByLayer,
+    tigACSbyViewID
 }

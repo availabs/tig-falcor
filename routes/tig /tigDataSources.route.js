@@ -309,4 +309,30 @@ module.exports = [
             });
         },
     },
+
+    {
+        route: `tig.acs_census.byId[{keys:views}].data_overlay`,
+        get: function(pathSet) {
+            const views = pathSet.views;
+            return TigDataSourcesService.tigACSbyViewID(views).then((rows) => {
+                const result = [];
+                views.forEach((viewID) => {
+                    const filteredRows = rows.filter(r => r.view_id === viewID);
+
+                    if (!filteredRows) {
+                        result.push({
+                            path: ["tig", "acs_census", "byId", viewID, 'data_overlay'],
+                            value: $atom(null),
+                        });
+                    } else {
+                        result.push({
+                            path: ["tig", "acs_census", "byId", viewID, 'data_overlay'],
+                            value: $atom(filteredRows),
+                        });
+                    }
+                });
+                return result;
+            });
+        },
+    },
 ];
