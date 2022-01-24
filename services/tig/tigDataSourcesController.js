@@ -127,7 +127,7 @@ const tigViewByLayer = (layer) =>{
 
 const tigACSbyViewID = (viewIDs) =>{
     const sql = `
-        SELECT view_id, areas.name area, fips_code fips, value, base_value, "value"/NULLIF("base_value", 0) percentage, type
+        SELECT view_id, areas.name area, lpad(fips_code::text, 11, '0') fips, value, base_value, ("value"/NULLIF("base_value", 0))*100 percentage, type
         FROM public.comparative_facts c
                  join areas
                       on areas.id = area_id
