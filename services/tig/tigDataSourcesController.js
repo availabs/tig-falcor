@@ -127,10 +127,22 @@ const tigViewByLayer = (layer) =>{
 
 const tigACSbyViewID = (viewIDs) =>{
     const sql = `
-        SELECT view_id, areas.name area, lpad(fips_code::text, 11, '0') fips, value, base_value, ("value"/NULLIF("base_value", 0))*100 percentage, type
+        SELECT view_id,
+               areas.name                                area,
+               lpad(fips_code::text, 11, '0')            fips,
+               value,
+               base_value,
+               ("value" / NULLIF("base_value", 0)) * 100 percentage,
+               type,
+               geom
         FROM public.comparative_facts c
-                 join areas
-                      on areas.id = area_id
+                 JOIN (
+            SELECT a.*, st_asgeojson(geom) geom
+            FROM public.areas a
+                     JOIN public.base_geometries bg
+                          ON base_geometry_id = bg.id
+        ) areas
+                      ON areas.id = area_id
         where view_id IN ('${viewIDs.join(`','`)}')
     `
     return db_service.promise(sql);
