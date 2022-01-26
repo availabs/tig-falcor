@@ -335,4 +335,82 @@ module.exports = [
             });
         },
     },
+
+    {
+        route: `tig.sed_county.byId[{keys:views}].data_overlay`,
+        get: function(pathSet) {
+            const views = pathSet.views;
+            return TigDataSourcesService.tigSEDCountybyViewID(views).then((rows) => {
+                const result = [];
+                views.forEach((viewID) => {
+                    const filteredRows = rows.filter(r => r.view_id === viewID);
+
+                    if (!filteredRows) {
+                        result.push({
+                            path: ["tig", "sed_county", "byId", viewID, 'data_overlay'],
+                            value: $atom(null),
+                        });
+                    } else {
+                        result.push({
+                            path: ["tig", "sed_county", "byId", viewID, 'data_overlay'],
+                            value: $atom(filteredRows),
+                        });
+                    }
+                });
+                return result;
+            });
+        },
+    },
+
+    {
+        route: `tig.sed_county_2055.byId[{keys:views}].data_overlay`,
+        get: function(pathSet) {
+            const views = pathSet.views;
+            return TigDataSourcesService.tigSEDCounty2055byViewID(views).then((rows) => {
+                const result = [];
+                views.forEach((viewID) => {
+                    const filteredRows = rows.filter(r => r.view_id === viewID);
+
+                    if (!filteredRows) {
+                        result.push({
+                            path: ["tig", "sed_county_2055", "byId", viewID, 'data_overlay'],
+                            value: $atom(null),
+                        });
+                    } else {
+                        result.push({
+                            path: ["tig", "sed_county_2055", "byId", viewID, 'data_overlay'],
+                            value: $atom(filteredRows),
+                        });
+                    }
+                });
+                return result;
+            });
+        },
+    },
+
+    {
+        route: `tig.sed_taz.byId[{keys:views}].data_overlay`,
+        get: function(pathSet) {
+            const views = pathSet.views;
+            return TigDataSourcesService.tigSEDTazbyViewID(views).then((rows) => {
+                const result = [];
+                views.forEach((viewID) => {
+                    const filteredRows = rows.filter(r => r.view_id === viewID);
+
+                    if (!filteredRows) {
+                        result.push({
+                            path: ["tig", "sed_taz", "byId", viewID, 'data_overlay'],
+                            value: $atom(null),
+                        });
+                    } else {
+                        result.push({
+                            path: ["tig", "sed_taz", "byId", viewID, 'data_overlay'],
+                            value: $atom(filteredRows),
+                        });
+                    }
+                });
+                return result;
+            });
+        },
+    },
 ];
