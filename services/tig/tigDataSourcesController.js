@@ -190,6 +190,51 @@ const tigSEDCounty2055byViewID = (viewIDs) =>{
     return db_service.promise(sql);
 }
 
+const tigRTPProjectsbyViewID = (viewIDs) =>{
+    const sql = `
+        SELECT view_id, rtp.description, estimated_cost, p.name plan_portion, pt.name ptype, rtp_id, s.name sponsor, rtp.year, a.name, st_asGeoJson(geography) geom, geography
+        FROM public.rtp_projects rtp
+                 JOIN plan_portions p
+                      ON plan_portion_id = p.id
+                 JOIN ptypes pt
+                      ON ptype_id = pt.id
+                 JOIN sponsors s
+                      ON sponsor_id = s.id
+                 JOIN areas a
+                      ON county_id = a.id
+        WHERE view_id IN ('${viewIDs.join(`','`)}')
+    `;
+
+    return db_service.promise(sql);
+}
+
+const tigTipbyViewID = (viewIDs) =>{
+    const sql = `
+        SELECT view_id,
+               tip_id,
+               cost,
+               rtp.description,
+               m.name               mpo,
+               pt.name                 ptype,
+               s.name                  sponsor,
+               a.name,
+               st_asGeoJson(geography) geom,
+               geography
+        FROM public.tip_projects rtp
+                 JOIN mpos m
+                      ON mpo_id = m.id
+                 JOIN ptypes pt
+                      ON ptype_id = pt.id
+                 JOIN sponsors s
+                      ON sponsor_id = s.id
+                 JOIN areas a
+                      ON county_id = a.id
+        WHERE view_id IN ('${viewIDs.join(`','`)}')
+    `;
+
+    return db_service.promise(sql);
+}
+
 const tigSEDTazbyViewID = (viewIDs) =>{
     const sql = `
         SELECT areas.name area, areas.type, view_id, json_object_agg(df.year, value) AS data, enclosing_name, enclosing_type, geom
@@ -229,5 +274,7 @@ module.exports = {
     tigACSbyViewID,
     tigSEDCountybyViewID,
     tigSEDTazbyViewID,
-    tigSEDCounty2055byViewID
+    tigSEDCounty2055byViewID,
+    tigRTPProjectsbyViewID,
+    tigTipbyViewID
 }

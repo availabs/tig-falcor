@@ -389,6 +389,58 @@ module.exports = [
     },
 
     {
+        route: `tig.rtp_project_data.byId[{keys:views}].data_overlay`,
+        get: function(pathSet) {
+            const views = pathSet.views;
+            return TigDataSourcesService.tigRTPProjectsbyViewID(views).then((rows) => {
+                const result = [];
+                views.forEach((viewID) => {
+                    const filteredRows = rows.filter(r => r.view_id === viewID);
+
+                    if (!filteredRows) {
+                        result.push({
+                            path: ["tig", "rtp_project_data", "byId", viewID, 'data_overlay'],
+                            value: $atom(null),
+                        });
+                    } else {
+                        result.push({
+                            path: ["tig", "rtp_project_data", "byId", viewID, 'data_overlay'],
+                            value: $atom(filteredRows),
+                        });
+                    }
+                });
+                return result;
+            });
+        },
+    },
+
+    {
+        route: `tig.tip.byId[{keys:views}].data_overlay`,
+        get: function(pathSet) {
+            const views = pathSet.views;
+            return TigDataSourcesService.tigTipbyViewID(views).then((rows) => {
+                const result = [];
+                views.forEach((viewID) => {
+                    const filteredRows = rows.filter(r => r.view_id === viewID);
+
+                    if (!filteredRows) {
+                        result.push({
+                            path: ["tig", "tip", "byId", viewID, 'data_overlay'],
+                            value: $atom(null),
+                        });
+                    } else {
+                        result.push({
+                            path: ["tig", "tip", "byId", viewID, 'data_overlay'],
+                            value: $atom(filteredRows),
+                        });
+                    }
+                });
+                return result;
+            });
+        },
+    },
+
+    {
         route: `tig.sed_taz.byId[{keys:views}].data_overlay`,
         get: function(pathSet) {
             const views = pathSet.views;

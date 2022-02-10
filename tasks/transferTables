@@ -12,23 +12,23 @@ DSTHOST=lor.availabs.org
 DSSTDB=nymtc_development
 
 ## pre processing
-psql -h $DSTHOST -U postgres -d nymtc_development -f createMissingElements.sql
+#psql -h $DSTHOST -U postgres -d nymtc_development -f createMissingElements.sql
 
 
-pg_dump  --no-owner --schema-only -U $SRCUSR -h $SRCHOST  -t geography_metadata -d $SRCDB | sed s/ny.nysdot_region_boundaries/public.nysdot_region_boundaries/g | sed s/npmrds_monthly_avg_tt_partitions./public./g | sed s/us.mpo_boundaries_20200228_smtc_patch/public.mpo_boundaries/g | sed s/us.urban_area_boundaries_20170918/public.urban_area_boundaries/g | psql -W -h $DSTHOST -U postgres -d nymtc_development
+#pg_dump  --no-owner -U $SRCUSR -h $SRCHOST  -t '*.npmrds_shapefile_*' -d $SRCDB | sed s/ny.nysdot_region_boundaries/public.nysdot_region_boundaries/g | sed s/npmrds_monthly_avg_tt_partitions./public./g | sed s/us.mpo_boundaries_20200228_smtc_patch/public.mpo_boundaries/g | sed s/us.urban_area_boundaries_20170918/public.urban_area_boundaries/g | psql -W -h $DSTHOST -U postgres -d nymtc_development
 
 
 ### materialized view
 
 ## create tmp table to dump schema
-psql -U $SRCUSR -h $SRCHOST -d $SRCDB -c "create table _tmp_geography_metadata as select * from geography_metadata"
+#psql -U $SRCUSR -h $SRCHOST -d $SRCDB -c "create table _tmp_geography_metadata as select * from geography_metadata"
 
 ## dump
-pg_dump  --no-owner -U $SRCUSR -h $SRCHOST  -t _tmp_geography_metadata -d $SRCDB | sed s/_tmp_geography_metadata/geography_metadata/g | psql -W -h $DSTHOST -U postgres -d nymtc_development
+#pg_dump  --no-owner -U $SRCUSR -h $SRCHOST  -t _tmp_geography_metadata -d $SRCDB | sed s/_tmp_geography_metadata/geography_metadata/g | psql -W -h $DSTHOST -U postgres -d nymtc_development
 
 ## drop tmp table
-psql -U $SRCUSR -h $SRCHOST -d $SRCDB -c "drop table _tmp_geography_metadata"
+#psql -U $SRCUSR -h $SRCHOST -d $SRCDB -c "drop table _tmp_geography_metadata"
 
 ### done
-## -t us.mpo_boundaries_20200228_smtc_patch -t us.urban_area_boundaries_20170918 -t ny.nysdot_region_boundaries -t tl_2017_us_county -t 'public.tmc_metadata_20*' -t '*.npmrds_monthly_avg_tt*' -t '*.tmc_metadata_20*'
+## -t us.mpo_boundaries_20200228_smtc_patch -t us.urban_area_boundaries_20170918 -t ny.nysdot_region_boundaries -t tl_2017_us_county -t 'public.tmc_metadata_20*' -t '*.npmrds_monthly_avg_tt*' -t '*.tmc_metadata_20*' -t '*.npmrds_shapefile_*'
 ## -t geography_metadata
