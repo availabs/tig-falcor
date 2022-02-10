@@ -64,7 +64,7 @@ module.exports = [
 
           if (!seenYears.has(year)) {
             acc.push(
-              tmcController.tmcMeta(tmcs, [year], ["length", "roadname"])
+              tmcController.tmcMeta(tmcs, [year], ["length", "roadname", "direction"])
             );
 
             resultsMeta.push({ type: "TMC_META", year });
@@ -91,8 +91,8 @@ module.exports = [
           acc[year] = {};
 
           for (let i = 0; i < tmcMetaResult.length; ++i) {
-            const { tmc, length, roadname } = tmcMetaResult[i];
-            acc[year][tmc] = { length, roadname };
+            const { tmc, length, roadname, direction } = tmcMetaResult[i];
+            acc[year][tmc] = { length, roadname, direction };
           }
 
           return acc;
@@ -140,7 +140,7 @@ module.exports = [
           const tmcs = tmcsByGeo[geoKey] || [];
 
           const data = tmcs.reduce((acc2, tmc) => {
-            const { length = null, roadname = null } = tmcMetaByTmc[tmc] || {};
+            const { length = null, roadname = null, direction = null } = tmcMetaByTmc[tmc] || {};
             const avgTTByHr = avgTTByTmc[tmc] || {};
 
             const s = HOURS.map((hr) => {
@@ -166,6 +166,7 @@ module.exports = [
               acc2[tmc] = {
                 roadname,
                 length,
+                  direction,
                 s,
               };
             }

@@ -1,0 +1,38 @@
+#!/bin/bash
+
+set -e
+set -a
+
+SRCUSR=postgres
+SRCHOST=lor.availabs.org
+SRCDB=nymtc_development
+
+DSTUSR=gateway
+DSTHOST=127.0.0.1
+DSSTDB=gateway_test2
+
+## pre processing
+# had to login via ssh "ssh deploy@tigtest2.nymtc.org -p 899", change to postgres "sudo su postgres", run psql "psql", connect to gateway_test2 "\c gateway_test2", then copy-paste the commands.
+# cat createMissingElements.sql | ssh deploy@tigtest2.nymtc.org -p 899 'psql -h127.0.0.1 -p5432 -Ugateway -dgateway_test2'
+#psql -h $DSTHOST -U postgres -d nymtc_development -f createMissingElements.sql
+
+
+pg_dump  --no-owner -U $SRCUSR -h $SRCHOST -t geography_metadata -d $SRCDB | ssh deploy@tigtest2.nymtc.org -p 899 'psql -h127.0.0.1 -p5432 -Ugateway -dgateway_test2'
+
+
+### materialized view
+
+## create tmp table to dump schema
+#psql -U $SRCUSR -h $SRCHOST -d $SRCDB -c "create table _tmp_geography_metadata as select * from geography_metadata"
+
+## dump
+#pg_dump  --no-owner -U $SRCUSR -h $SRCHOST  -t _tmp_geography_metadata -d $SRCDB | sed s/_tmp_geography_metadata/geography_metadata/g | psql -W -h $DSTHOST -U postgres -d nymtc_development
+
+## drop tmp table
+#psql -U $SRCUSR -h $SRCHOST -d $SRCDB -c "drop table _tmp_geography_metadata"
+
+### done
+## -t mpo_boundaries -t urban_area_boundaries -t nysdot_region_boundaries -t tl_2017_us_county -t 'ny.ritis_avg_speedlimits' -t '*.tmc_metadata_20*' -t '*.npmrds_monthly_avg_tt*' -t '*.npmrds_shapefile_*' -t geography_metadata
+#
+#
+##
