@@ -465,4 +465,56 @@ module.exports = [
             });
         },
     },
+
+    {
+        route: `tig.hub_bound_travel_data.byId[{keys:views}].data_overlay`,
+        get: function(pathSet) {
+            const views = pathSet.views;
+            return TigDataSourcesService.tigHubBoundTravelDatabyViewID(views).then((rows) => {
+                const result = [];
+                views.forEach((viewID) => {
+                    const filteredRows = rows.filter(r => r.view_id === viewID);
+
+                    if (!filteredRows) {
+                        result.push({
+                            path: ["tig", "hub_bound_travel_data", "byId", viewID, 'data_overlay'],
+                            value: $atom(null),
+                        });
+                    } else {
+                        result.push({
+                            path: ["tig", "hub_bound_travel_data", "byId", viewID, 'data_overlay'],
+                            value: $atom(filteredRows),
+                        });
+                    }
+                });
+                return result;
+            });
+        },
+    },
+
+    {
+        route: `tig.bpm_performance.byId[{keys:views}].data_overlay`,
+        get: function(pathSet) {
+            const views = pathSet.views;
+            return TigDataSourcesService.tigBPMPerformancebyViewID(views).then((rows) => {
+                const result = [];
+                views.forEach((viewID) => {
+                    const filteredRows = rows.filter(r => r.view_id === viewID);
+
+                    if (!filteredRows) {
+                        result.push({
+                            path: ["tig", "bpm_performance", "byId", viewID, 'data_overlay'],
+                            value: $atom(null),
+                        });
+                    } else {
+                        result.push({
+                            path: ["tig", "bpm_performance", "byId", viewID, 'data_overlay'],
+                            value: $atom(filteredRows),
+                        });
+                    }
+                });
+                return result;
+            });
+        },
+    },
 ];

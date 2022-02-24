@@ -260,6 +260,67 @@ const tigSEDTazbyViewID = (viewIDs) =>{
     return db_service.promise(sql);
 }
 
+const tigHubBoundTravelDatabyViewID = (viewIDs) =>{
+    const sql = `
+        SELECT count,
+               hour,
+               cf.id,
+               l.latitude  lat,
+               l.longitude lon,
+               location_id loc_id,
+               l.name      loc_name,
+               m.name      mode_name,
+               tr.name     route_name,
+               s.name      sector_name,
+               cv.name     var_name,
+               ta.name     transit_agency,
+               year,
+               direction,
+               view_id
+        FROM public.count_facts cf
+                 JOIN count_variables cv
+                      ON count_variable_id = cv.id
+                 JOIN sectors s
+                      ON sector_id = s.id
+                 JOIN transit_routes tr
+                      ON transit_route_id = tr.id
+                 JOIN transit_modes m
+                      ON transit_mode_id = m.id
+                 JOIN locations l
+                      ON location_id = l.id
+                 JOIN transit_agencies ta
+                      ON cf.transit_agency_id = ta.id
+        where view_id IN ('${viewIDs.join(`','`)}')
+    `;
+
+    return db_service.promise(sql);
+}
+
+const tigBPMPerformancebyViewID = (viewIDs) =>{
+    const sql = `
+        SELECT a.name,
+               a.type,
+               avg_speed,
+               functional_class,
+               period,
+               vehicle_miles_traveled,
+               vehicle_hours_traveled,
+               geom,
+               view_id
+        FROM public.performance_measures_facts
+        JOIN (
+            SELECT a.*, st_asgeojson(geom) geom
+                        FROM public.areas a
+                                 JOIN public.base_geometries bg
+                                      ON base_geometry_id = bg.id
+            ) a
+                      ON a.id = area_id
+        where view_id IN ('${viewIDs.join(`','`)}')
+    `;
+
+    return db_service.promise(sql);
+}
+
 module.exports = {
     SOURCES_ATTRIBUTES,
     VIEWS_ATTRIBUTES,
@@ -276,5 +337,7 @@ module.exports = {
     tigSEDTazbyViewID,
     tigSEDCounty2055byViewID,
     tigRTPProjectsbyViewID,
-    tigTipbyViewID
+    tigTipbyViewID,
+    tigHubBoundTravelDatabyViewID,
+    tigBPMPerformancebyViewID
 }
