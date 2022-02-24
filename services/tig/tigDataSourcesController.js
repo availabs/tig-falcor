@@ -119,7 +119,10 @@ const tigLayerByViewId = (viewIds) =>{
 
 const tigViewByLayer = (layer) =>{
     const sql = `
-    SELECT distinct id, name, layer FROM public.views
+    SELECT distinct v.id, v.name, layer, s.name source_name 
+    FROM public.views v
+             join sources s
+                  on source_id = s.id
     WHERE layer IN ('${layer.join(`','`)}')
     `
     return db_service.promise(sql);
