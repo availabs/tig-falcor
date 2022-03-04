@@ -33,7 +33,7 @@ set layer =
                 THEN 'rtp_project_data'
 
             WHEN id IN (131,64,187)
-                THEN 'tig'
+                THEN 'tip'
 
             WHEN id IN (22,132,134,142,146,145,18,128,133,143,147,144)
                 THEN 'acs_census'
@@ -77,3 +77,11 @@ set layer =
 
 
 
+/*
+
+WHEN id IN (23)
+                THEN 'hub_bound_travel_data'
+
+            WHEN id IN (53,141)
+                THEN 'rtp_project_data'
+*/
