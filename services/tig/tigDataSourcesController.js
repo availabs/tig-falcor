@@ -83,7 +83,7 @@ const tigDataSourcesViewsByLength = (source_ids) => {
     const sql = `
         SELECT source_id,COUNT(1)
         FROM public.views
-        WHERE source_id IN ('${source_ids.join(`','`)}')
+        WHERE source_id IN ('${source_ids.join(`','`)}') and deleted_at is null
         GROUP BY source_id
     `;
 
@@ -95,7 +95,7 @@ const tigDataSourcesViewsByIndex = (source_ids) =>{
     const sql = `
         SELECT id,source_id
         FROM public.views
-        WHERE source_id IN ('${source_ids.join(`','`)}')
+        WHERE source_id IN ('${source_ids.join(`','`)}') and deleted_at is null
 		`;
     return db_service.promise(sql);
 }
@@ -103,7 +103,7 @@ const tigDataSourcesViewsByIndex = (source_ids) =>{
 const tigDataSourceViewsById = (source_ids,ids) =>{
     const sql = `
     SELECT * FROM public.views
-    WHERE  source_id IN ('${source_ids.join(`','`)}')
+    WHERE  source_id IN ('${source_ids.join(`','`)}') and deleted_at is null
     AND id IN  ('${ids.join(`','`)}')
     `
     return db_service.promise(sql);
@@ -112,7 +112,7 @@ const tigDataSourceViewsById = (source_ids,ids) =>{
 const tigLayerByViewId = (viewIds) =>{
     const sql = `
     SELECT * FROM public.views
-    WHERE id IN ('${viewIds.join(`','`)}')
+    WHERE id IN ('${viewIds.join(`','`)}') and deleted_at is null
     `
     return db_service.promise(sql);
 }
@@ -120,7 +120,7 @@ const tigLayerByViewId = (viewIds) =>{
 const tigViewByLayer = (layer) =>{
     const sql = `
     SELECT distinct id, name, layer FROM public.views
-    WHERE layer IN ('${layer.join(`','`)}')
+    WHERE layer IN ('${layer.join(`','`)}') and deleted_at is null
     `
     return db_service.promise(sql);
 }
