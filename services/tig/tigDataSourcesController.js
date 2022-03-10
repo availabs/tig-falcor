@@ -240,10 +240,11 @@ const tigTipbyViewID = (viewIDs) =>{
 
 const tigSEDTazbyViewID = (viewIDs) =>{
     const sql = `
-        SELECT areas.name area, areas.type, view_id, json_object_agg(df.year, value) AS data, enclosing_name, enclosing_type, geom
+        SELECT q.*, st_asgeojson(bg.geom) from 
+        (SELECT areas.name area, areas.type, view_id, json_object_agg(df.year, value) AS data, enclosing_name, enclosing_type, bg_id
         FROM public.demographic_facts df
                  JOIN (
-                        SELECT a.*, st_asgeojson(geom) geom
+                        SELECT a.*, bg.id as bg_id
                         FROM public.areas a
                                  JOIN public.base_geometries bg
                                       ON base_geometry_id = bg.id
@@ -256,8 +257,9 @@ const tigSEDTazbyViewID = (viewIDs) =>{
                                       on areas.id = enclosing_area_id
                     ) enclosing_geoms
                 ON enclosed_area_id = area_id
-        where view_id IN ('${viewIDs.join(`','`)}')
-        group by 1, 2, 3, 5, 6, 7
+        where view_id IN (${viewIDs.join(`','`)})
+        group by 1, 2, 3, 5, 6,7) as q
+        join public.base_geometries bg on q.bg_id = bg.id
     `;
 
     return db_service.promise(sql);

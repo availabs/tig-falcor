@@ -444,8 +444,11 @@ module.exports = [
         route: `tig.sed_taz.byId[{keys:views}].data_overlay`,
         get: function(pathSet) {
             const views = pathSet.views;
+            console.time('SED TAZ Data Fetch')
             return TigDataSourcesService.tigSEDTazbyViewID(views).then((rows) => {
                 const result = [];
+                console.timeEnd('SED TAZ Data Fetch')
+                console.time('SED TAZ Data process')
                 views.forEach((viewID) => {
                     const filteredRows = rows.filter(r => r.view_id === viewID);
 
@@ -461,6 +464,7 @@ module.exports = [
                         });
                     }
                 });
+                console.timeEnd('SED TAZ Data process')
                 return result;
             });
         },
