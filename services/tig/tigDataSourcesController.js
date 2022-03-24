@@ -240,7 +240,7 @@ const tigTipbyViewID = (viewIDs) =>{
 
 const tigSEDTazbyViewID = (viewIDs) =>{
     const sql = `
-        SELECT q.*, st_asgeojson(bg.geom) from 
+        SELECT q.*, st_asgeojson(bg.geom) as geom from 
         (SELECT areas.name area, areas.type, view_id, json_object_agg(df.year, value) AS data, enclosing_name, enclosing_type, bg_id
         FROM public.demographic_facts df
                  JOIN (
