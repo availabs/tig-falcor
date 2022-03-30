@@ -1,4 +1,7 @@
 const db_service = require("../tig_db");
+const cachePath = require('../cache');
+const memoizeFs = require("memoize-fs");
+const memoizer = memoizeFs({ cachePath });
 
 const SOURCES_ATTRIBUTES = [
     'id',
@@ -355,7 +358,7 @@ module.exports = {
     tigDataSourceViewsById,
     tigLayerByViewId,
     tigViewByLayer,
-    tigACSbyViewID,
+    tigACSbyViewIDMem: memoizer.fn(tigACSbyViewID),
     tigSEDCountybyViewID,
     tigSEDTazbyViewID,
     tigSEDCounty2055byViewID,
