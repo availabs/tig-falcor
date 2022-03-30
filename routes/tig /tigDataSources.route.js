@@ -1,4 +1,5 @@
 const falcorJsonGraph = require("falcor-json-graph"),
+    get = require('lodash.get'),
     $atom = falcorJsonGraph.atom,
     TigDataSourcesService = require("../../services/tig/tigDataSourcesController"),
     $ref = falcorJsonGraph.ref,
@@ -498,7 +499,7 @@ module.exports = [
 
     {
         route: `tig.bpm_performance.byId[{keys:views}].data_overlay`,
-        get: function(pathSet) {
+        get: function (pathSet) {
             const views = pathSet.views;
             return TigDataSourcesService.tigBPMPerformancebyViewID(views).then((rows) => {
                 const result = [];
@@ -518,6 +519,50 @@ module.exports = [
                     }
                 });
                 return result;
+            });
+        },
+    },
+    {
+        route: `tig.source[{keys:source}].view[{keys:view}]`,
+        get: function(pathSet) {
+            console.log(pathSet)
+            return TigDataSourcesService.viewData(pathSet.source[0], pathSet.view).then((rows) => {
+                const response = []
+                pathSet.source.forEach(source => {
+                    pathSet.view.forEach(view => {
+                        let filteredRows =
+                            rows.filter(r => r[view]).map(r => r[view])[0]
+                                .reduce((acc, r) => ({...acc, ...r}), {})
+                        console.log(rows, filteredRows)
+                        response.push(
+                            {
+                                path: ["tig", 'source', source, 'view', view],
+                                value: $atom(filteredRows),
+                            }
+                        )
+                    })
+                })
+                return response
+            });
+        },
+    },
+
+    {
+        route: `tig.geoms.gid[{keys:ids}]`,
+        get: function(pathSet) {
+            console.log(pathSet)
+            return TigDataSourcesService.geoms(pathSet.ids).then((rows) => {
+                const response = []
+                pathSet.ids.forEach(id => {
+                    let filteredRows = rows.filter(r => r.id === id)
+                    response.push(
+                        {
+                            path: ["tig", 'geoms', 'gid', id],
+                            value: get(filteredRows, [0, 'geom']),
+                        }
+                    )
+                })
+                return response
             });
         },
     },

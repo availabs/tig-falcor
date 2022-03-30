@@ -326,6 +326,24 @@ const tigBPMPerformancebyViewID = (viewIDs) =>{
     return db_service.promise(sql);
 }
 
+const viewData = (source, viewIDs) =>{
+    const sql = `
+        SELECT ${viewIDs.map(v => `"${v}"`).join(',')}
+        FROM datatable_${source.toLowerCase().split(' ').join('_')}_data
+    `;
+
+    return db_service.promise(sql);
+}
+
+const geoms = (ids) =>{
+    const sql = `
+        SELECT id, st_asgeojson(geom) as geom
+        FROM public.base_geometries 
+        WHERE id IN (${ids})
+    `;
+
+    return db_service.promise(sql);
+}
 module.exports = {
     SOURCES_ATTRIBUTES,
     VIEWS_ATTRIBUTES,
@@ -344,5 +362,7 @@ module.exports = {
     tigRTPProjectsbyViewID,
     tigTipbyViewID,
     tigHubBoundTravelDatabyViewID,
-    tigBPMPerformancebyViewID
+    tigBPMPerformancebyViewID,
+    viewData,
+    geoms
 }
