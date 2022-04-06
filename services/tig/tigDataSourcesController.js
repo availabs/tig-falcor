@@ -233,7 +233,7 @@ const tigTipbyViewID = (viewIDs) =>{
                       ON ptype_id = pt.id
                  JOIN sponsors s
                       ON sponsor_id = s.id
-                 JOIN areas a
+                 LEFT JOIN areas a
                       ON county_id = a.id
         WHERE view_id IN ('${viewIDs.join(`','`)}')
     `;
