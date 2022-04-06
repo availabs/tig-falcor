@@ -7,7 +7,6 @@ config.py
 */__pycache__/
 tasks/tests
 npmrds_routes_data_cache/*
-services/cache/cache-path.js
 
 *.tgz
 *.tar.gz
