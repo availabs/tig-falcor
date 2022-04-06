@@ -1,5 +1,5 @@
 const db_service = require("../tig_db");
-const cachePath = require('../cache');
+const cachePath = require('../cache/cache-path');
 const memoizeFs = require("memoize-fs");
 const memoizer = memoizeFs({ cachePath });
 
@@ -233,7 +233,7 @@ const tigTipbyViewID = (viewIDs) =>{
                       ON ptype_id = pt.id
                  JOIN sponsors s
                       ON sponsor_id = s.id
-                 JOIN areas a
+                 LEFT JOIN areas a
                       ON county_id = a.id
         WHERE view_id IN ('${viewIDs.join(`','`)}')
     `;
