@@ -10,7 +10,6 @@ module.exports = [
     {
         route: `tig.datasources.length`,
         get: function(pathSet) {
-            console.log("tig.datasources.length");
             console.time("tig.datasources.length");
             return TigDataSourcesService.tigDataSourcesByLength().then(
                 (rows) => {
@@ -525,7 +524,6 @@ module.exports = [
     {
         route: `tig.source[{keys:source}].view[{keys:view}]`,
         get: function(pathSet) {
-            console.log(pathSet)
             return TigDataSourcesService.viewData(pathSet.source[0], pathSet.view).then((rows) => {
                 const response = []
                 pathSet.source.forEach(source => {
@@ -533,7 +531,6 @@ module.exports = [
                         let filteredRows =
                             rows.filter(r => r[view]).map(r => r[view])[0]
                                 .reduce((acc, r) => ({...acc, ...r}), {})
-                        console.log(rows, filteredRows)
                         response.push(
                             {
                                 path: ["tig", 'source', source, 'view', view],
@@ -550,7 +547,6 @@ module.exports = [
     {
         route: `tig.geoms.gid[{keys:ids}]`,
         get: function(pathSet) {
-            console.log(pathSet)
             return TigDataSourcesService.geoms(pathSet.ids).then((rows) => {
                 const response = []
                 pathSet.ids.forEach(id => {
