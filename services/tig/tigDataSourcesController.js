@@ -332,7 +332,7 @@ const tigBPMPerformancebyViewID = (viewIDs) =>{
 const viewData = (source, viewIDs) =>{
     const sql = `
         SELECT ${viewIDs.map(v => `"${v}"`).join(',')}
-        FROM datatable_${source.toLowerCase().split(' ').join('_')}
+        FROM datatable_${source.toLowerCase().split(' ').join('_')}_data
     `;
 
     return db_service.promise(sql);
