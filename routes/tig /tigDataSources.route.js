@@ -529,8 +529,11 @@ module.exports = [
                 pathSet.source.forEach(source => {
                     pathSet.view.forEach(view => {
                         let filteredRows =
-                            rows.filter(r => r[view]).map(r => r[view])[0]
-                                .reduce((acc, r) => ({...acc, ...r}), {})
+                            source.includes('acs') ?
+                                rows.filter(r => r[view]).map(r => r[view])
+                                    .reduce((acc, r) => ({...acc, ...r}), {}) :
+                                rows.filter(r => r[view]).map(r => r[view])[0]
+                                    .reduce((acc, r) => ({...acc, ...r}), {})
                         response.push(
                             {
                                 path: ["tig", 'source', source, 'view', view],
