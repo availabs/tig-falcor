@@ -367,5 +367,5 @@ module.exports = {
     tigHubBoundTravelDatabyViewID,
     tigBPMPerformancebyViewID,
     viewData,
-    geoms
+    geomsMem: memoizer.fn(geoms)
 }

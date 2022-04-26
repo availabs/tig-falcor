@@ -550,7 +550,7 @@ module.exports = [
     {
         route: `tig.geoms.gid[{keys:ids}]`,
         get: function(pathSet) {
-            return TigDataSourcesService.geoms(pathSet.ids).then((rows) => {
+            return TigDataSourcesService.geomsMem.then((fn => fn(pathSet.ids))).then((rows) => {
                 const response = []
                 pathSet.ids.forEach(id => {
                     let filteredRows = rows.filter(r => r.id === id)
