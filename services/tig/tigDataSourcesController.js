@@ -277,6 +277,8 @@ const tigHubBoundTravelDatabyViewID = (viewIDs) =>{
                l.longitude lon,
                location_id loc_id,
                l.name      loc_name,
+               l_in.name in_station_name, 
+               l_out.name out_station_name,
                m.name      mode_name,
                tr.name     route_name,
                s.name      sector_name,
@@ -296,6 +298,10 @@ const tigHubBoundTravelDatabyViewID = (viewIDs) =>{
                       ON transit_mode_id = m.id
                  JOIN locations l
                       ON location_id = l.id
+                 JOIN locations l_in
+                      ON in_station_id = l_in.id
+                 JOIN locations l_out
+                      ON out_station_id = l_out.id
                  JOIN transit_agencies ta
                       ON cf.transit_agency_id = ta.id
         where view_id IN ('${viewIDs.join(`','`)}')
