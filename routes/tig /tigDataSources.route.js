@@ -524,7 +524,10 @@ module.exports = [
     {
         route: `tig.source[{keys:source}].view[{keys:view}]`,
         get: function(pathSet) {
-            return TigDataSourcesService.viewData(pathSet.source[0], pathSet.view).then((rows) => {
+            return TigDataSourcesService.viewData(pathSet.source[0], pathSet.view,
+                pathSet.source[0].toLowerCase().includes('taz') ? 'sed_taz' :
+                pathSet.source[0].toLowerCase().includes('county') ? 'sed_county' : null
+            ).then((rows) => {
                 const response = []
                 pathSet.source.forEach(source => {
                     pathSet.view.forEach(view => {
@@ -537,6 +540,34 @@ module.exports = [
                         response.push(
                             {
                                 path: ["tig", 'source', source, 'view', view],
+                                value: $atom(filteredRows),
+                            }
+                        )
+                    })
+                })
+                return response
+            });
+        },
+    },
+
+    {
+        route: `tig.source[{keys:source}].view[{keys:view}].schema[{keys:schema}]`,
+        get: function(pathSet) {
+            return TigDataSourcesService.viewData(pathSet.source[0], pathSet.view, pathSet.schema).then((rows) => {
+                const response = []
+                pathSet.source.forEach(source => {
+                    pathSet.view.forEach(view => {
+                        let filteredRows =  rows.filter(r => r[view]).map(r => r[view])[0];
+
+                        if(Array.isArray(filteredRows)){
+                            filteredRows = filteredRows.reduce((acc, r) => ({...acc, ...r}), {});
+                        }else{
+                            filteredRows = Object.keys(filteredRows).map(year => ({[year]: filteredRows[year]})).reduce((acc, r) => ({...acc, ...r}), {})
+                        }
+
+                        response.push(
+                            {
+                                path: ["tig", 'source', source, 'view', view, 'schema', pathSet.schema],
                                 value: $atom(filteredRows),
                             }
                         )
