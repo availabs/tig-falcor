@@ -335,10 +335,13 @@ const tigBPMPerformancebyViewID = (viewIDs) =>{
     return db_service.promise(sql);
 }
 
-const viewData = (source, viewIDs) =>{
+const viewData = (source, viewIDs, schema) =>{
     const sql = `
         SELECT ${viewIDs.map(v => `"${v}"`).join(',')}
-        FROM datatable_${source.toLowerCase().split(' ').join('_')}_data
+        FROM ${
+                !schema ? `datatable_${source.toLowerCase().split(' ').join('_')}_data` :
+                        `${schema}.datatable_${source.toLowerCase().split(' ').join('_')}`
+             }
     `;
 
     return db_service.promise(sql);
