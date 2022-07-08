@@ -363,32 +363,6 @@ module.exports = [
     },
 
     {
-        route: `tig.sed_county_2055.byId[{keys:views}].data_overlay`,
-        get: function(pathSet) {
-            const views = pathSet.views;
-            return TigDataSourcesService.tigSEDCounty2055byViewID(views).then((rows) => {
-                const result = [];
-                views.forEach((viewID) => {
-                    const filteredRows = rows.filter(r => r.view_id === viewID);
-
-                    if (!filteredRows) {
-                        result.push({
-                            path: ["tig", "sed_county_2055", "byId", viewID, 'data_overlay'],
-                            value: $atom(null),
-                        });
-                    } else {
-                        result.push({
-                            path: ["tig", "sed_county_2055", "byId", viewID, 'data_overlay'],
-                            value: $atom(filteredRows),
-                        });
-                    }
-                });
-                return result;
-            });
-        },
-    },
-
-    {
         route: `tig.rtp_project_data.byId[{keys:views}].data_overlay`,
         get: function(pathSet) {
             const views = pathSet.views;
@@ -524,10 +498,13 @@ module.exports = [
     {
         route: `tig.source[{keys:source}].view[{keys:view}]`,
         get: function(pathSet) {
-            return TigDataSourcesService.viewData(pathSet.source[0], pathSet.view,
-                pathSet.source[0].toLowerCase().includes('taz') ? 'sed_taz' :
+            
+            const type = pathSet.source[0].toLowerCase().includes('taz') ? 'sed_taz' :
                 pathSet.source[0].toLowerCase().includes('county') ? 'sed_county' : null
-            ).then((rows) => {
+            console.time(`tig source ${type} query`)
+            return TigDataSourcesService.viewData(pathSet.source[0], pathSet.view, type)
+            .then((rows) => {
+                console.timeEnd(`tig source ${type} query`)
                 const response = []
                 pathSet.source.forEach(source => {
                     pathSet.view.forEach(view => {
@@ -553,7 +530,9 @@ module.exports = [
     {
         route: `tig.source[{keys:source}].view[{keys:view}].schema[{keys:schema}]`,
         get: function(pathSet) {
+            console.time('get viewData schema')
             return TigDataSourcesService.viewData(pathSet.source[0], pathSet.view, pathSet.schema).then((rows) => {
+                console.timeEnd('get viewData schema')
                 const response = []
                 pathSet.source.forEach(source => {
                     pathSet.view.forEach(view => {
