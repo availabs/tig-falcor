@@ -22,7 +22,7 @@ module.exports = [
                                 type: 'Feature',
                                 id: row.id,
                                 properties: {
-                                    name: row.name,
+                                    area: row.name,
                                     id: row.id
                                 },
                                 geometry: row.geom
