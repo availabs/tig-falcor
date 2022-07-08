@@ -20,10 +20,10 @@ module.exports = [
                         .reduce((out,row) => {
                             out.geo.features.push({
                                 type: 'Feature',
-                                id: row.id,
+                                id: row.area_id,
                                 properties: {
-                                    area: row.name,
-                                    id: row.id
+                                    area: row.area_id,
+                                    name: row.name
                                 },
                                 geometry: row.geom
                             })

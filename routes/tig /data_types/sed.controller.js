@@ -8,7 +8,7 @@ const sedTazBySource = (source_ids) =>
       source_ids
         .reduce((a, c) => {
 	        const sql = `
-              SELECT name, value, st_asgeojson(geom) as geom, enclosing_name, enclosing_type, ${c} as source_id 
+              SELECT name, area_id, value, st_asgeojson(geom) as geom, enclosing_name, enclosing_type, ${c} as source_id 
               FROM sed_taz.sed_taz_source_${c}
             `;
        	    a.push(db_service.promise(sql));
