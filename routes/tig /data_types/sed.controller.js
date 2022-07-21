@@ -1,7 +1,7 @@
 const db_service = require("../../../services/tig_db");
-// const cachePath = require('../cache/cache-path');
-// const memoizeFs = require("memoize-fs");
-// const memoizer = memoizeFs({ cachePath });
+const cachePath = require('../../../services/cache/cache-path');
+const memoizeFs = require("memoize-fs");
+const memoizer = memoizeFs({ cachePath });
 
 const sedTazBySource = (source_ids) =>
     Promise.all(
@@ -20,5 +20,6 @@ const sedTazBySource = (source_ids) =>
 
 
 module.exports = {
-	sedTazBySource
+	sedTazBySource,
+  sedTazBySourceMem: memoizer.fn(sedTazBySource),
 }

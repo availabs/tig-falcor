@@ -11,7 +11,7 @@ module.exports = [
         get: function(pathSet) {
             const source_ids = pathSet.source_ids;
             console.time(`SED TAZ Data Fetch ${source_ids.join(',')}`)
-            return SedController.sedTazBySource(source_ids).then((rows) => {
+            return SedController.sedTazBySourceMem.then(fn => fn(source_ids)).then((rows) => {
                 console.timeEnd(`SED TAZ Data Fetch ${source_ids.join(',')}`)
                 const result = []
                 source_ids.forEach(source_id => {
