@@ -1,5 +1,5 @@
-const db_service = require("../../../services/tig_db");
-const cachePath = require('../../../services/cache/cache-path');
+const db_service = require("../../../../services/tig_db");
+const cachePath = require('../../../../services/cache/cache-path');
 const memoizeFs = require("memoize-fs");
 const memoizer = memoizeFs({ cachePath });
 
