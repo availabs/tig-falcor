@@ -335,5 +335,6 @@ module.exports = {
     tigTipbyViewID,
     tigBPMPerformancebyViewID,
     viewData,
+    viewDataMem: memoizer.fn(viewData),
     geomsMem: memoizer.fn(geoms)
 }
