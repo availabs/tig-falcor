@@ -15,6 +15,7 @@ module.exports = [
             return HubBoundController.tigHubBoundTravelDatabyViewIDMem.then(fn => fn(views)).then((rows) => {
                 console.timeEnd('hubbound query')
                 const result = [];
+                console.time('hubbound process')
                 views.forEach((viewID) => {
                     const filteredRows = rows.filter(r => r.view_id === viewID);
 
@@ -30,6 +31,7 @@ module.exports = [
                         });
                     }
                 });
+                console.timeEnd('hubbound process')
                 return result;
             });
         },
