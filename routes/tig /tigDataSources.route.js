@@ -507,7 +507,7 @@ module.exports = [
         route: `tig.source[{keys:source}].view[{keys:view}].schema[{keys:schema}]`,
         get: function(pathSet) {
             console.time('get viewData schema')
-            return TigDataSourcesService.viewData(pathSet.source[0], pathSet.view, pathSet.schema).then((rows) => {
+            return TigDataSourcesService.viewDataMem.then(fn => fn(pathSet.source[0], pathSet.view, pathSet.schema)).then((rows) => {
                 console.timeEnd('get viewData schema')
                 const response = []
                 pathSet.source.forEach(source => {

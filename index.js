@@ -9,12 +9,15 @@ const AVAILRouter = require('./routes');
 const appRoutes = require("./routes/appRoutes")
 const img = require('./routes/image')
 const jwtAuth = require('./services/authorization/jwtAuth');
+var compression = require('compression')
+
 
 const {loadConflationRoutingData} = require('./services/conflationRoutingController');
 
 // const imgNew = require("./routes/img")
 
 const app = express();
+app.use(compression())
 
 const {
   AUTH_URI,
