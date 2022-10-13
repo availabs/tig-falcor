@@ -7,26 +7,24 @@ const falcorJsonGraph = require("falcor-json-graph"),
 
 module.exports = [
      {
-        route: `tig.sed_taz.bySource[{keys:source_ids}].data`,
+        route: `tig.sed_county.bySource[{keys:source_ids}].data`,
         get: function(pathSet) {
             const source_ids = pathSet.source_ids;
-            console.time(`SED TAZ Data Fetch ${source_ids.join(',')}`)
-            return SedController.sedTazBySourceDataMem.then(fn => fn(source_ids)).then((rows) => {
-                console.timeEnd(`SED TAZ Data Fetch ${source_ids.join(',')}`)
+            return SedController.sedCountyBySourceDataMem.then(fn => fn(source_ids)).then((rows) => {
                 const result = []
                 source_ids.forEach(source_id => {
                     let source_data = rows
                         .filter(r => r.source_id = source_id)
                         .reduce((out,row) => {
-                            out.data[row.name] = {value: row.value, enclosing_name: row.enclosing_name}
+                            out.data[row.name] = {value: row.value, enclosing_name: row.name}
                             return out
                         }, {
                             data: {}
                         })
                     let data = Object.keys(source_data.data)
-                    .reduce((out, tazId) => {
-                        out[tazId] = {
-                            value: Object.values(source_data.data[tazId].value)
+                    .reduce((out, countyId) => {
+                        out[countyId] = {
+                            value: Object.values(source_data.data[countyId].value)
                                 .reduce((viewOut, view) => {
                                     let viewId = Object.keys(view)[0]
                                     viewOut[viewId] = Object.values(view[viewId])
@@ -37,12 +35,12 @@ module.exports = [
                                         }, {})
                                     return viewOut
                                 }, {}),
-                            enclosing_name: source_data.data[tazId].enclosing_name
+                            enclosing_name: source_data.data[countyId].enclosing_name
                         }
                         return out
                     },{})
                     result.push({
-                      path: ["tig", "sed_taz", "bySource", source_id, "data"],
+                      path: ["tig", "sed_county", "bySource", source_id, "data"],
                       value: $atom({data}) ,
                     })
 
@@ -53,12 +51,10 @@ module.exports = [
         },
     },
     {
-        route: `tig.sed_taz.bySource[{keys:source_ids}].geom`,
+        route: `tig.sed_county.bySource[{keys:source_ids}].geom`,
         get: function(pathSet) {
             const source_ids = pathSet.source_ids;
-            console.time(`SED TAZ Data Fetch ${source_ids.join(',')}`)
-            return SedController.sedTazBySourceGeomMem.then(fn => fn(source_ids)).then((rows) => {
-                console.timeEnd(`SED TAZ Data Fetch ${source_ids.join(',')}`)
+            return SedController.sedCountyBySourceGeomMem.then(fn => fn(source_ids)).then((rows) => {
                 const result = []
                 source_ids.forEach(source_id => {
                     let source_data = rows
@@ -80,8 +76,8 @@ module.exports = [
                             data: {}
                         })
                     let data = Object.keys(source_data.data)
-                    .reduce((out, tazId) => {
-                        out[tazId] = Object.values(source_data.data[tazId])
+                    .reduce((out, countyId) => {
+                        out[countyId] = Object.values(source_data.data[countyId])
                             .reduce((viewOut, view) => {
                                 let viewId = Object.keys(view)[0]
                                 viewOut[viewId] = Object.values(view[viewId])
@@ -95,7 +91,7 @@ module.exports = [
                         return out
                     },{})
                     result.push({
-                      path: ["tig", "sed_taz", "bySource", source_id, "geom"],
+                      path: ["tig", "sed_county", "bySource", source_id, "geom"],
                       value: $atom({geo:source_data.geo, data}) ,
                     })
 

@@ -3,7 +3,7 @@ const cachePath = require('../../../../services/cache/cache-path');
 const memoizeFs = require("memoize-fs");
 const memoizer = memoizeFs({ cachePath });
 
-const tigHubBoundTravelDatabyViewID = (viewIDs) =>{
+const tigHubBoundTravelDatabyViewID = (viewIDs, year) =>{
     const sql = `
         SELECT count,
                hour,
@@ -40,6 +40,18 @@ const tigHubBoundTravelDatabyViewID = (viewIDs) =>{
                  left outer JOIN transit_agencies ta
                       ON cf.transit_agency_id = ta.id
         where view_id IN ('${viewIDs.join(`','`)}')
+        ${year ? `and year IN ('${year.join(`','`)}')` : ``}
+    `;
+
+    return db_service.promise(sql);
+}
+
+const tigHubBoundYearsbyViewID = (viewIDs) =>{
+    const sql = `
+        SELECT view_id, array_agg(distinct year) years
+        FROM public.count_facts cf
+        where view_id IN ('${viewIDs.join(`','`)}')
+        GROUP BY 1
     `;
 
     return db_service.promise(sql);
@@ -48,5 +60,6 @@ const tigHubBoundTravelDatabyViewID = (viewIDs) =>{
 
 module.exports = {
 	tigHubBoundTravelDatabyViewID,
-  tigHubBoundTravelDatabyViewIDMem: memoizer.fn(tigHubBoundTravelDatabyViewID),
+    tigHubBoundTravelDatabyViewIDMem: memoizer.fn(tigHubBoundTravelDatabyViewID),
+    tigHubBoundYearsbyViewID
 }
