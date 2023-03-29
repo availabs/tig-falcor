@@ -1,0 +1,93 @@
+#!/usr/bin/env node
+
+const fetch = require("node-fetch");
+
+const urlBase = "http://127.0.0.1:4444/graph?paths=";
+
+const getPaths = [
+  // "dama-info.pgEnvs",
+  // ["dama-info", "pgEnvs"],
+
+  // // "dama[{keys:pgEnvs}].sources.length",
+  // ["dama", "dama_dev_1", "sources", "byId", "4", "attributes", "name"],
+  // ["dama", "dama_dev_2", "sources", "byId", "2", "attributes", "name"],
+
+  // // `dama[{keys:pgEnvs}].sources.byId[{keys:sourceIds}].views.length`,
+  // ["dama", "dama_dev_1", "sources", "byId", "4", "views", "length"],
+  // ["dama", "dama_dev_2", "sources", "byId", "2", "views", "length"],
+
+  // // `dama[{keys:pgEnvs}].sources.byId[{keys:sourceIds}].views.byIndex[{integers:viewIndexes}]`,
+  // [
+  //   "dama",
+  //   "dama_dev_1",
+  //   "sources",
+  //   "byId",
+  //   "4",
+  //   "views",
+  //   "byIndex",
+  //   [0, 1, 2, 3, 4],
+  // ],
+  // [
+  //   "dama",
+  //   "dama_dev_2",
+  //   "sources",
+  //   "byId",
+  //   "2",
+  //   "views",
+  //   "byIndex",
+  //   [0, 1, 2, 3, 4],
+  // ],
+
+  // // `dama[{keys:pgEnvs}].sources.byIndex[{integers:indices}]`,
+  // ["dama", "dama_dev_1", "sources", "byIndex", "3"],
+  // ["dama", "dama_dev_2", "sources", "byIndex", "5"],
+
+  // // `dama[{keys:pgEnvs}].views.byId[{keys:ids}].attributes[${viewAttrs}]`,
+  // [
+  //   "dama",
+  //   "dama_dev_1",
+  //   "views",
+  //   "byId",
+  //   328,
+  //   "attributes",
+  //   ["data_type", "data_table"],
+  // ],
+  // ["dama", "dama_dev_2", "views", "byId", 329, "attributes", "data_table"],
+
+  // [
+  // "dama",
+  // "dama_dev_1",
+  // "viewId",
+  // 12,
+  // "byIntId",
+  // [1, 2, 3, 4, 5, 6],
+  // ["specific_recorder_placement"],
+  // ],
+  // ["dama", "dama_dev_1", "viewId", 1, "mapboxConfiguration"],
+
+  // `dama[{keys:pgEnvs}].viewDependencySubgraphs.byViewId[{keys:viewIds}]`
+  // ["dama", "dama_dev_1", "viewDependencySubgraphs", "byViewId", 593],
+  // `dama[{keys:pgEnvs}].etlContexts.byDamaSourceId[{keys:damaSourceIds}].byEtlContextState['OPEN', 'FINAL', 'ERROR']`
+  [
+    "dama",
+    "dama_dev_1",
+    "etlContexts",
+    "byDamaSourceId",
+    5, // NpmrdsTravelTimesExport on dama_dev_1
+    "STOPPED",
+  ],
+];
+
+async function main() {
+  const route = `${urlBase}${JSON.stringify(getPaths)}&method=get`;
+
+  const url = encodeURI(route).replace(/\+/g, "%2B");
+
+  const res = await fetch(url);
+
+  const d = await res.json();
+
+  console.log(JSON.stringify(d, null, 4));
+}
+
+main();
