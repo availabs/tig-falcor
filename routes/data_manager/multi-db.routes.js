@@ -45,7 +45,7 @@ module.exports = [
     get: async function() {
       try {
         const pgEnvs = await listPgEnvs();
-
+        console.log('dama-info.pgEnvs', pgEnvs)
         return [
           {
             path: ["dama-info", "pgEnvs"],
