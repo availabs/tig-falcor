@@ -59,6 +59,19 @@ const getTableFromIds = async (pgEnv, source_id, view_id) => {
   return db.query(sql);
 
 }
+const getTableFromViewId = async (pgEnv, view_id) => {
+  const sql =
+      `
+       SELECT source_id, view_id, table_schema, table_name
+       FROM data_manager.views
+       where view_id = ${view_id};
+      `;
+
+  const db = await getDb(pgEnv);
+
+  return db.query(sql);
+
+}
 
 const getLtsView = async (pgEnv, source_id) => {
   const sql =
@@ -147,7 +160,7 @@ const eventsByType = async (pgEnv, source_ids, view_ids, typeCol = 'event_type')
                                    coalesce(injuries_indirect::float,0)
                                  ) / 10
                              )
-                         ), 0) * 7600000   as person_damage
+                         ), 0) * 11600000   as person_damage
                 
                 FROM ${table.table_schema}.${table.table_name} 
                 group by 1)
@@ -487,6 +500,133 @@ const enhancedNCEILossByYearByType = async (pgEnv, source_id, view_id, typeCol =
   return res;
 };
 
+const enhancedNCEILossByGeoid = async (pgEnv, source_id, view_id, geoid, groupBy) => {
+  const table_names = await getTableFromIds(pgEnv, source_id, view_id);
+  const db = await getDb(pgEnv);
+
+  const res = table_names.rows.reduce(async (acc, table) => {
+    await acc;
+
+    const sql = `
+    SELECT geoid, ${groupBy ? `${groupBy}, ` : ``}
+		sum(property_damage) property_damage, sum(crop_damage) crop_damage,
+        sum(coalesce(property_damage, 0) + coalesce(crop_damage, 0)) total_damage,
+        sum(property_damage_adjusted) property_damage_adjusted, sum(crop_damage_adjusted) crop_damage_adjusted,
+        sum(coalesce(property_damage_adjusted, 0) + coalesce(crop_damage_adjusted, 0)) total_damage_adjusted
+	FROM ${table.table_schema}.${table.table_name}
+	WHERE nri_category not in 
+	('Astronomical Low Tide', 'Dense Fog', 'Dust Devil', 'Dust Storm', 
+	    'Heavy Rain', 'Marine Dense Fog', 'Dense Smoke', 'Freezing Fog', 'Northern Lights')
+	AND geoid in (${geoid.map(gid => `'${gid}'`).join(', ')})
+	GROUP BY 1 ${groupBy ? `,2 ` : ``}
+	ORDER BY 1 ${groupBy ? `,2 ` : ``};
+    `
+
+    const {
+      rows
+    } = await db.query(sql);
+
+    acc.push({ ...table, rows });
+
+    return acc;
+  }, []);
+
+  return res;
+};
+
+const enhancedNCEINormalizedCount = async (pgEnv, view_id) => {
+  const table_names = await getTableFromViewId(pgEnv, view_id);
+  const db = await getDb(pgEnv);
+  const startYear = 1996,
+        endYear = 2022;
+  const populationDollarAmt = 11600000;
+
+  const res = table_names.rows.reduce(async (acc, table) => {
+    await acc;
+
+    const sql = `
+    with buildings as (
+    select 'buildings'   ctype,
+            event_id,
+            substring(geoid, 1, 5) geoid,
+            nri_category,
+            min(begin_date_time)::date     swd_begin_date,
+            max(end_date_time) ::date      swd_end_date,
+            coalesce(sum(property_damage), 0) damage
+    FROM ${table.table_schema}.${table.table_name}
+    WHERE year between ${startYear} and ${endYear}
+    AND geoid is not null
+    AND nri_category is not null
+    GROUP BY 1, 2, 3, 4
+        ),
+        crop as (
+    select
+        'crop' ctype,
+        event_id,
+        substring (geoid, 1, 5) geoid,
+        nri_category,
+        min (begin_date_time):: date swd_begin_date,
+        max (end_date_time):: date swd_end_date,
+        coalesce (sum (crop_damage), 0) damage
+    FROM ${table.table_schema}.${table.table_name}
+    WHERE year between ${startYear} and ${endYear}
+      AND geoid is not null
+      AND nri_category is not null
+    GROUP BY 1, 2, 3, 4
+        ),
+        population as (
+    select
+        'population' ctype,
+        event_id,
+        substring (geoid, 1, 5) geoid,
+        nri_category,
+        min (begin_date_time):: date swd_begin_date,
+        max (end_date_time):: date swd_end_date,
+        coalesce (
+          sum (
+            coalesce (deaths_direct:: float, 0) +
+            coalesce (deaths_indirect:: float, 0) +
+            (
+              (
+              coalesce (injuries_direct:: float, 0) +
+              coalesce (injuries_indirect:: float, 0)
+              ) / 10
+            )
+          )
+        , 0) * ${populationDollarAmt} damage
+    FROM ${table.table_schema}.${table.table_name}
+    WHERE year between ${startYear} and ${endYear}
+      AND geoid is not null
+      AND nri_category is not null
+    GROUP BY 1, 2, 3, 4
+        ),
+        alldata as (
+          select * from buildings
+          union all
+          select * from crop
+          union all
+          select * from population
+        )
+    select nri_category,
+           SUM(CASE WHEN damage > 0 THEN 1 ELSE 0 END)::integer loss_events,
+           count(1)::integer                                    total_events
+    FROM alldata
+    group by 1
+    order by 1;
+    `
+
+    const {
+      rows
+    } = await db.query(sql);
+
+    acc.push({ ...table, rows });
+
+    return acc;
+  }, []);
+
+  return res;
+};
+
 const nriTotals = async (pgEnv, source_id, view_id) => {
   const table_names = await getTableFromIds(pgEnv, source_id, view_id);
   const db = await getDb(pgEnv);
@@ -623,9 +763,9 @@ const comparativeStatsSwdSummarySql = (dataTables) => `
                                    coalesce(injuries_indirect::float,0)
                                  ) / 10
                              )
-                         ), 0) * 7600000   as swd_events_person_damage
+                         ), 0) * 11600000   as swd_events_person_damage
        FROM ${dataTables.ncei_storm_events_enhanced.table_schema}.${dataTables.ncei_storm_events_enhanced.table_name}
-       where (year >= 1996 and year <=2019)
+       where (year >= 1996 and year <=2022) and geoid is not null
          and nri_category not in ('OTHER','Marine Dense Fog', 'Dense Fog', 'Astronomical Low Tide','Dust Devil','Dense Smoke','Dust Storm', 'Northern Lights')
        group by 1
            `;
@@ -648,8 +788,9 @@ const comparativeStatsPerBasisSummarySql = (dataTables) => `
             FROM ${dataTables.per_basis.table_schema}.${dataTables.per_basis.table_name}
             group by 1
 `;
-const comparativeStatsNriSummarySql = (dataTables) => `
-      SELECT 
+const comparativeStatsNriSummarySql = (dataTables, groupByGeoid = false, geoLevelLen) => `
+      SELECT
+        ${groupByGeoid ? `substring(stcofips, 1, ${geoLevelLen}) as geoid, ` : ``}
        unnest(array[
            'avalanche', 'coastal', 'coldwave', 
            'drought','earthquake', 'hurricane', 
@@ -674,8 +815,9 @@ const comparativeStatsNriSummarySql = (dataTables) => `
             ]) as nri_loss_total
       
      FROM ${dataTables.nri.table_schema}.${dataTables.nri.table_name}
+     ${groupByGeoid ? `group by 1` : ``}
 `;
-const comparativeStatsHlrSummarySql = (dataTables, groupByGeoid = false) => `
+const comparativeStatsHlrSummarySql = (dataTables, groupByGeoid = false, geoLevelLen) => `
       with dollars as (SELECT ${groupByGeoid ? `geoid, ` : ``}
                               nri_category,
                               ctype,
@@ -789,10 +931,10 @@ const comparativeStatsHlrSummarySql = (dataTables, groupByGeoid = false) => `
                        ORDER BY 1, 2 ${groupByGeoid ? `, 3` : ``})
 
 
-      select ${groupByGeoid ? `geoid, ` : ``} nri_category,
-             coalesce(sum(case when ctype = 'buildings' then avail else 0 end))  avail_swd_buildings,
-             coalesce(sum(case when ctype = 'crop' then avail else 0 end), 0)      avail_swd_crop,
-             coalesce(sum(case when ctype = 'population' then avail else 0 end), 0) avail_swd_population
+      select ${groupByGeoid ? `substring(geoid, 1, ${geoLevelLen}) as geoid, ` : ``} nri_category,
+             coalesce(sum(case when ctype = 'buildings' then avail else 0 end))  avail_buildings,
+             coalesce(sum(case when ctype = 'crop' then avail else 0 end), 0)      avail_crop,
+             coalesce(sum(case when ctype = 'population' then avail else 0 end), 0) avail_population
       from dollars
       group by 1 ${groupByGeoid ? `, 2` : ``}
       order by 1 ${groupByGeoid ? `, 2` : ``}
@@ -804,7 +946,7 @@ const comparativeStats = async (pgEnv, source_id, view_id) => {
 
   dataTables['hlr'] = await getTableNames(pgEnv, dependencies.find(d => d.type === 'hlr'));
   dataTables['nri'] = await getTableNames(pgEnv, dependencies.find(d => d.type === 'nri'));
-  dataTables['per_basis'] = await getTableNames(pgEnv, dependencies.find(d => d.type === 'per_basis'));
+  dataTables['per_basis'] = await getTableNames(pgEnv, dependencies.find(d => d.type.includes('per_basis')));
   dataTables['ncei_storm_events_enhanced'] = await getTableNames(pgEnv, dependencies.find(d => d.type === 'ncei_storm_events_enhanced'));
   dataTables['tl_county'] = await getTableNames(pgEnv, dependencies.find(d => d.type === 'tl_county'));
   dataTables['tl_state'] = await getTableNames(pgEnv, dependencies.find(d => d.type === 'tl_state'));
@@ -838,8 +980,8 @@ const comparativeStats = async (pgEnv, source_id, view_id) => {
 	nri_loss_total nri_eal,
 	
 	-- avail
-	avail_swd_buildings, avail_swd_crop, avail_swd_population, 
-	avail_swd_buildings + avail_swd_crop + avail_swd_population as avail_swd_eal
+	avail_buildings, avail_crop, avail_population, 
+	avail_buildings + avail_crop + avail_population as avail_eal
 
     from swd_summary as a
            join per_basis_summary as b using(nri_category)
@@ -848,7 +990,7 @@ const comparativeStats = async (pgEnv, source_id, view_id) => {
     order by 1 asc
  
   `
-  console.log(sql)
+
   const {
     rows
   } = await db.query(sql);
@@ -856,42 +998,327 @@ const comparativeStats = async (pgEnv, source_id, view_id) => {
 };
 
 
-const EALByGeoidByNriCat = async (pgEnv, source_id, view_id) => {
+const EALByGeoidByNriCat = async (pgEnv, source_id, view_id, geoids) => {
+
   const db = await getDb(pgEnv);
   const dependencies = await getViewDependencies(pgEnv, view_id);
   const dataTables = {}
 
   dataTables['hlr'] = await getTableNames(pgEnv, dependencies.find(d => d.type === 'hlr'));
   dataTables['nri'] = await getTableNames(pgEnv, dependencies.find(d => d.type === 'nri'));
-  dataTables['per_basis'] = await getTableNames(pgEnv, dependencies.find(d => d.type === 'per_basis'));
+  const geoLevelGroups = {
+    2: geoids.filter(geoid => geoid.toString().length === 2),
+    5: geoids.filter(geoid => geoid.toString().length === 5),
+    all: geoids.filter(geoid => geoid === 'all')
+  }
+
+  const queries =
+      Object.keys(geoLevelGroups)
+      .filter(geoLevelLen => geoLevelGroups[geoLevelLen].length)
+      .map(geoLevelLen => {
+        const handleAllGeoReq = geoLevelLen === 'all' ? 5 : geoLevelLen;
+
+        const sql = `
+                    with
+                      nri_summary as (
+                          ${comparativeStatsNriSummarySql(dataTables, true, handleAllGeoReq)}
+                      ),
+                       hlr_summary as (
+                          ${comparativeStatsHlrSummarySql(dataTables, true, handleAllGeoReq)}
+                       ),
+                       hazard_percents as (
+                            select  substring(geoid, 1, ${handleAllGeoReq}) as geoid, 
+                                    nri_category, 
+                                    PERCENT_RANK() OVER (PARTITION BY nri_category ORDER BY (avail_buildings + avail_crop + avail_population)) national_percent_hazard, 
+                                    PERCENT_RANK() OVER (PARTITION BY nri_category, substring (geoid, 1, 2) ORDER BY (avail_buildings + avail_crop + avail_population)) sate_percent_hazard,
+                                    -- avail
+                                    avail_buildings, avail_crop, avail_population, avail_buildings + avail_crop + avail_population as avail_eal
+                      
+                            from hlr_summary
+                            order by nri_category, 7 desc
+                            ),
+                      total_percents as (
+                            select substring(geoid, 1, ${handleAllGeoReq}) as geoid, sum(avail_buildings + avail_crop + avail_population) avail_eal_total,
+                                PERCENT_RANK() OVER (ORDER BY sum (avail_buildings + avail_crop + avail_population)) national_percent_total, 
+                                PERCENT_RANK() OVER (PARTITION BY substring (geoid, 1, 2) ORDER BY sum (avail_buildings + avail_crop + avail_population)) state_percent_total
+                            from hlr_summary
+                            group by geoid
+                            order by 3 desc
+                            )
+                
+                    SELECT *, nri_loss_total as nri_eal, 
+                           CASE 
+                               WHEN COALESCE(nri_loss_total, 0) > 0 AND not COALESCE(avail_eal, 0) > 0 THEN -100
+                               WHEN not COALESCE(nri_loss_total, 0) > 0 AND COALESCE(avail_eal, 0) > 0 THEN 100
+                               WHEN not COALESCE(nri_loss_total, 0) > 0 AND not COALESCE(avail_eal, 0) > 0 THEN null
+                               ELSE ((avail_eal - nri_loss_total) / nri_loss_total) * 100
+                            END as diff
+                    FROM hazard_percents
+                        FULL OUTER JOIN nri_summary
+                            USING (geoid, nri_category)
+                        JOIN total_percents
+                             USING (geoid)
+                    ${geoLevelLen === 'all' ? `` : `WHERE substring(geoid, 1, ${geoLevelLen}) IN (${geoLevelGroups[geoLevelLen].map(gid => `'${gid}'`)})`};
+                  `;
+
+        return db.query(sql);
+      })
+
+  return Promise.all(queries)
+      .then(data => Object.keys(queries)
+                          .reduce((acc, curr, currI) =>
+                              [...acc, ..._.get(data, [currI, 'rows'], [])] , [])
+      );
+};
+
+const fusionLossByYearByDisasterNumberTotal = async (pgEnv, source_id, view_id) => {
+  const table_names = await getTableFromIds(pgEnv, source_id, view_id);
+  const db = await getDb(pgEnv);
+
+  const res = table_names.rows.reduce(async (acc, table) => {
+    await acc;
+
+    const sql = `
+    SELECT 
+    EXTRACT(YEAR from coalesce(fema_incident_begin_date, swd_begin_date)) as year,
+            coalesce(disaster_number, 'SWD') as disaster_number, 
+            sum(fema_property_damage) fema_property_damage, sum(fema_crop_damage) fema_crop_damage, 
+            sum(swd_property_damage) swd_property_damage, sum(swd_crop_damage) swd_crop_damage, sum(swd_population_damage) swd_population_damage,
+            sum(fusion_property_damage) fusion_property_damage, sum(fusion_crop_damage) fusion_crop_damage 
+    FROM ${table.table_schema}.${table.table_name}
+    WHERE EXTRACT(YEAR from coalesce(fema_incident_begin_date, swd_begin_date)) is not null
+    GROUP BY 1, 2 
+    order by 1, 2;
+	`;
+
+    const {
+      rows
+    } = await db.query(sql);
+
+    acc.push({ ...table, rows });
+
+    return acc;
+  }, []);
+
+  return res;
+};
+
+const fusionLossByYearByDisasterNumberByGeoid = async (pgEnv, source_id, view_id, geoids) => {
+  const table_names = await getTableFromIds(pgEnv, source_id, view_id);
+  const db = await getDb(pgEnv);
+  const geoLevelGroups = {2: geoids.filter(geoid => geoid.toString().length === 2), 5: geoids.filter(geoid => geoid.toString().length === 5)}
+  
+  const res = table_names.rows.reduce(async (acc, table) => {
+    await acc;
+
+    const queries =
+        Object.keys(geoLevelGroups)
+            .filter(geoLevelLen => geoLevelGroups[geoLevelLen].length)
+            .map(geoLevelLen => {
+              const sql = `
+                          SELECT 
+                          substring(geoid, 1, ${geoLevelLen}) as geoid,
+                          EXTRACT(YEAR from coalesce(fema_incident_begin_date, swd_begin_date)) as year,
+                                  coalesce(disaster_number, 'SWD') as disaster_number, 
+                                  count(1) numEvents, 
+                                  (ARRAY_AGG(distinct nri_category))[1] as nri_category,
+                                  sum(fema_property_damage) fema_property_damage, sum(fema_crop_damage) fema_crop_damage, 
+                                  sum(swd_property_damage) swd_property_damage, sum(swd_crop_damage) swd_crop_damage, sum(swd_population_damage) swd_population_damage,
+                                  sum(fusion_property_damage) fusion_property_damage, sum(fusion_crop_damage) fusion_crop_damage 
+                          FROM ${table.table_schema}.${table.table_name}
+                          WHERE EXTRACT(YEAR from coalesce(fema_incident_begin_date, swd_begin_date)) is not null
+                          AND substring(geoid, 1, ${geoLevelLen}) IN (${geoids.map(geoid => `'${geoid}'`)})
+                          GROUP BY 1, 2, 3 
+                          order by 1, 2, 3;
+                          `;
+              return db.query(sql);
+            });
+
+    const rows = await Promise.all(queries)
+                              .then(data => Object.keys(queries).reduce((acc, curr, currI) =>
+                                  [...acc, ..._.get(data, [currI, 'rows'], [])] , [])
+                              );
+    acc.push({ ...table, rows });
+
+    return acc;
+  }, []);
+
+  return res;
+};
+
+
+const fusionValidateLosses = async (pgEnv, source_id, view_id) => {
+  const dependencies = await getViewDependencies(pgEnv, parseInt(view_id));
+  const dataTables = {}
+
+  dataTables['ncei_storm_events_enhanced'] = await getTableNames(pgEnv, dependencies.find(d => d.type === 'ncei_storm_events_enhanced'));
+  dataTables['disaster_loss_summary'] = await getTableNames(pgEnv, dependencies.find(d => d.type === 'disaster_loss_summary'));
+
+  const table_names = await getTableFromIds(pgEnv, source_id, view_id);
+  const db = await getDb(pgEnv);
+
+  const res = table_names.rows.reduce(async (acc, table) => {
+    await acc;
+    
+    const nceiLossesSql = `
+                          select sum(property_damage) property_damage, sum(crop_damage) crop_damage, 
+                               sum(
+                                                                  coalesce(deaths_direct::float,0) +
+                                                                  coalesce(deaths_indirect::float,0) +
+                                                                  (
+                                                                          (
+                                                                                  coalesce(injuries_direct::float,0) +
+                                                                                  coalesce(injuries_indirect::float,0)
+                                                                              ) / 10
+                                                                      )
+                                                          ) * 11600000 population_damage
+                          FROM ${dataTables.ncei_storm_events_enhanced.table_schema}.${dataTables.ncei_storm_events_enhanced.table_name}
+                          WHERE year >= 1996 and year <= 2022
+                          AND nri_category not in ('Dense Fog', 'Marine Dense Fog', 'Dense Smoke', 'Dust Devil', 'Dust Storm', 'Astronomical Low Tide', 'Northern Lights', 'OTHER')
+                          AND geoid is not null;
+                            `;
+    const {rows: nceiLosses} = await db.query(nceiLossesSql);
+
+    const ofdLossesSql = `
+                          SELECT sum(fema_property_damage) property_damage, sum(fema_crop_damage) crop_damage, 0 population_damage
+                          FROM ${dataTables.disaster_loss_summary.table_schema}.${dataTables.disaster_loss_summary.table_name};
+                            `;
+    const {rows: ofdLosses} = await db.query(ofdLossesSql);
+
+    const fusionLossesSql = `
+      SELECT  sum(fusion_property_damage) property_damage, sum(fusion_crop_damage) crop_damage,
+              sum(fema_property_damage) fema_property_damage, sum(fema_crop_damage) fema_crop_damage,
+              sum(swd_property_damage) swd_property_damage, sum(swd_crop_damage) swd_crop_damage, sum(swd_population_damage) swd_population_damage
+              FROM ${table.table_schema}.${table.table_name}
+    `;
+
+    const {rows: fusionLosses} = await db.query(fusionLossesSql);
+
+    const res = {
+      'NCEI': nceiLosses[0],
+      'Fusion NCEI': {
+        property_damage: fusionLosses[0].swd_property_damage,
+        crop_damage: fusionLosses[0].swd_crop_damage,
+        population_damage: fusionLosses[0].swd_population_damage,
+      },
+
+      'OFD': ofdLosses[0],
+      'Fusion OFD': {
+        property_damage: fusionLosses[0].fema_property_damage,
+        crop_damage: fusionLosses[0].fema_crop_damage,
+        population_damage: 0,
+      },
+
+      'Fusion': {
+        property_damage: fusionLosses[0].property_damage,
+        crop_damage: fusionLosses[0].crop_damage,
+        population_damage: fusionLosses[0].swd_population_damage,
+      }
+    }
+    acc.push({ ...table, res });
+
+    return acc;
+  }, []);
+
+  return res;
+};
+
+
+const fusionDataSourcesBreakdown = async (pgEnv, source_id, view_id) => {
+  const table_names = await getTableFromIds(pgEnv, source_id, view_id);
+  const dependencies = await getViewDependencies(pgEnv, parseInt(view_id));
+  const dataTables = {}
+
+  dataTables['dds'] = await getTableNames(pgEnv, dependencies.find(d => d.type === 'disaster_declarations_summaries_v2'));
+  const db = await getDb(pgEnv);
+
+  const res = table_names.rows.reduce(async (acc, table) => {
+    await acc;
+
+    const fusionLossesSql = `
+      select a.disaster_number, declaration_title || ' - ' || state as declaration_title,
+             sum(fema_property_damage) fema_property_damage, sum(fema_crop_damage) fema_crop_damage,
+             coalesce(sum(fema_property_damage), 0) + coalesce(sum(fema_crop_damage), 0) fema_total_damage,
+             sum(swd_property_damage)::double precision swd_property_damage, sum(swd_crop_damage)::double precision swd_crop_damage, 
+             sum(swd_population_damage)::double precision swd_population_damage,
+             coalesce(sum(swd_property_damage), 0) + coalesce(sum(swd_crop_damage), 0) + coalesce(sum(swd_population_damage), 0) swd_total_damage,
+
+            (coalesce(sum(fema_property_damage), 0) + coalesce(sum(fema_crop_damage), 0)) - 
+            (coalesce(sum(swd_property_damage), 0) + coalesce(sum(swd_crop_damage), 0) + coalesce(sum(swd_population_damage), 0)) diff
+
+      from ${table.table_schema}.${table.table_name} a
+      LEFT JOIN (
+      SELECT distinct disaster_number::text, 
+          FIRST_VALUE(declaration_title) OVER(PARTITION BY disaster_number) declaration_title,
+        FIRST_VALUE(state) OVER(PARTITION BY disaster_number) as state
+      FROM ${dataTables.dds.table_schema}.${dataTables.dds.table_name}) b
+      ON a.disaster_number = b.disaster_number
+      group by 1, 2
+    `;
+    console.log(fusionLossesSql)
+    const {rows} = await db.query(fusionLossesSql);
+
+    acc.push({ ...table, rows });
+
+    return acc;
+  }, []);
+
+  return res;
+};
+
+const simpleNRISelect = async (pgEnv, source_id, view_id, id_col='stcofips', id_vals, cols) => {
+  const table_names = await getTableFromIds(pgEnv, source_id, view_id);
+  const db = await getDb(pgEnv);
+
+  const res = table_names.rows.reduce(async (acc, table) => {
+    await acc;
+
+    const sql = `
+      SELECT ${id_col} id ${cols.length ? `, ${cols.join(', ')}` : ``}
+      from ${table.table_schema}.${table.table_name}
+      ${id_vals.length ? `WHERE ${id_col}::text IN (${id_vals.map(idv => `'${idv}'`).join(', ')})` : ``}
+    `;
+
+    const {rows} = await db.query(sql);
+
+    acc.push({ ...table, rows });
+
+    return acc;
+  }, []);
+
+  return res;
+};
+
+const comparativeStatsMega = async (pgEnv, source_id, view_id) => {
+  const db = await getDb(pgEnv);
+  const dependencies = await getViewDependencies(pgEnv, view_id);
+  const dataTables = {}
+
+  dataTables['hlr'] = await getTableNames(pgEnv, dependencies.find(d => d.type === 'hlr'));
+  dataTables['nri'] = await getTableNames(pgEnv, dependencies.find(d => d.type === 'nri'));
+  dataTables['per_basis'] = await getTableNames(pgEnv, dependencies.find(d => d.type.includes('per_basis')));
   dataTables['ncei_storm_events_enhanced'] = await getTableNames(pgEnv, dependencies.find(d => d.type === 'ncei_storm_events_enhanced'));
   dataTables['tl_county'] = await getTableNames(pgEnv, dependencies.find(d => d.type === 'tl_county'));
   dataTables['tl_state'] = await getTableNames(pgEnv, dependencies.find(d => d.type === 'tl_state'));
-  // added new code below
-  dataTables['fema_disasters'] = await getTableNames(pgEnv, dependencies.find(d => d.type === 'fema_disasters'));
 
-  const sql = `
-    with 
-         
-         hlr_summary as (
-            ${comparativeStatsHlrSummarySql(dataTables, true)}
-         )
-
-    select geoid, nri_category,
-	
-	-- avail
-	avail_swd_buildings, avail_swd_crop, avail_swd_population, 
-	avail_swd_buildings + avail_swd_crop + avail_swd_population as avail_swd_eal
-
-    from hlr_summary
-    order by 2 asc
- 
-  `;
+  const pbSql = `
+              with pb as (SELECT  geoid, nri_category, ctype, count(1) pb_num_rows, sum(num_events) pb_num_agg_events, sum(damage) pb_damage, sum(damage_adjusted) pb_damage_adjusted
+                          FROM ${dataTables.per_basis.table_schema}.${dataTables.per_basis.table_name}
+                          group by 1, 2, 3
+                         )
+              
+              select *
+              from ${dataTables.hlr.table_schema}.${dataTables.hlr.table_name}
+              full join pb
+              using(geoid, nri_category, ctype)
+  `
+  // console.log(pbSql)
   const {
     rows
-  } = await db.query(sql);
+  } = await db.query(pbSql);
   return rows;
 };
+
 module.exports = {
   listPgEnvs,
   numRows,
@@ -907,6 +1334,14 @@ module.exports = {
   enhancedNCEILossByYearByType,
   getLtsView,
   nriTotals,
+  simpleNRISelect,
   comparativeStats,
-  EALByGeoidByNriCat
+  EALByGeoidByNriCat,
+  fusionLossByYearByDisasterNumberTotal,
+  fusionLossByYearByDisasterNumberByGeoid,
+  fusionValidateLosses,
+  fusionDataSourcesBreakdown,
+  enhancedNCEILossByGeoid,
+  comparativeStatsMega,
+  enhancedNCEINormalizedCount
 };

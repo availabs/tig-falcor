@@ -291,6 +291,20 @@ const setViewAttributes = async (pgEnv, updates) => {
   return rows;
 };
 
+const getDataTableFromViewId = async (db, view_id) => {
+  const sql =
+      `
+       SELECT source_id, view_id, table_schema, table_name
+       FROM data_manager.views
+       where view_id = ${view_id};
+      `;
+
+  const {rows: [{ table_schema, table_name }]} = await db.query(sql);
+
+  return {table_schema, table_name}
+
+}
+
 const getViewMeta = async (db, pgEnv, viewId) => {
   const viewMetaQ = dedent(`
     with get_pkey as
@@ -308,9 +322,9 @@ const getViewMeta = async (db, pgEnv, viewId) => {
   `)
 
   
-  console.time('getViewMeta')
+  //console.time('getViewMeta')
   let qResult = await db.query(viewMetaQ, [viewId]);
-  console.timeEnd('getViewMeta')
+  //console.timeEnd('getViewMeta')
   if (qResult.rows.length !== 1) {
     throw new Error(
       `ERROR: Invalid damaViewId ${viewId}. No such view found in db ${pgEnv}`
@@ -343,9 +357,9 @@ const queryViewTabledataLength = async (pgEnv, viewId) => {
       table_name
   )
 
-  console.time('get view table data length query')
+  //console.time('get view table data length query')
   const result = await db.query(getTableRowCount);
-  console.timeEnd('get view table data length query')
+  //console.timeEnd('get view table data length query')
   const { rows : [num_rows]} = result
   //console.log('got data', result, result?.rows?.[0]?.num_rows, num_rows)
   return result?.rows?.[0]?.num_rows
@@ -353,7 +367,7 @@ const queryViewTabledataLength = async (pgEnv, viewId) => {
 
 const queryViewTabledataIndices = async (pgEnv, viewId) => {
   const db = await getDb(pgEnv);
-  console.log('query view table indexes')
+  //console.log('query view table indexes')
   const { 
     table_schema,
     table_name, 
@@ -368,9 +382,9 @@ const queryViewTabledataIndices = async (pgEnv, viewId) => {
       int_id_column_name
   )
 
-   console.time('get view table data indices query')
+  //console.time('get view table data indices query')
   const result = await db.query(getTableRowCount);
-  console.timeEnd('get view table data indices query')
+  //console.timeEnd('get view table data indices query')
   const { rows : [num_rows]} = result
   return result.rows || []
 }
@@ -405,9 +419,9 @@ const queryViewTabledataById = async (pgEnv, viewId, intIds, attributes) => {
       int_id_column_name
     )
   );
-  console.time('get view table data  query')
+  //console.time('get view table data  query')
   const { rows } = await db.query(dataQ);
-  console.timeEnd('get view table data  query')
+  //console.timeEnd('get view table data  query')
 
   const result = rows.reduce((acc, row) => {
     const id = row[int_id_column_name];
@@ -669,6 +683,102 @@ async function getSourceIdsByName(pgEnv, damaSrcNames) {
   return idsByName;
 }
 
+const handleFiltersType = (id_col, id_vals, type) => {
+  const typeToKeywordMapping = {
+    filter: {
+      array: 'IN',
+      null: 'IS'
+    },
+    exclude: {
+      array: 'NOT IN',
+      null: 'IS NOT'
+    }
+  }
+
+  const arrayVals = id_vals.filter(idv => !['null', 'not null'].includes(idv));
+  const nullVals = id_vals.find(idv => ['null', 'not null'].includes(idv));
+
+  return arrayVals.length ? `${id_col}::text ${typeToKeywordMapping[type].array} (${arrayVals.map(idv => `'${idv}'`).join(', ')})` :
+      nullVals ? `${id_col} ${typeToKeywordMapping[type].null} ${nullVals}` : ``;
+
+}
+
+const handleFilters = (filters, exclude) => {
+  const clauses =
+      Object.keys(filters).length || Object.keys(exclude).length ?
+          [
+            ...Object.keys(filters).length ?
+                Object.keys(filters).map((id_col) => handleFiltersType(id_col, filters[id_col], 'filter')) :
+                [],
+            ...Object.keys(exclude).length ?
+                Object.keys(exclude).map((id_col) => handleFiltersType(id_col, exclude[id_col], 'exclude')) :
+                []
+          ] : [];
+
+  return clauses.length ? `WHERE ${ clauses.join(' and ') }` : ``;
+}
+
+const handleGroupBy = (groups) =>
+    groups.length ? `GROUP BY ${groups.join(', ')}` : ``;
+
+const handleHaving = (clauses) =>
+    clauses.length ? `HAVING ${clauses.map(clause => `(${clause})`).join(' and ')}` : ``;
+
+const handleOrderBy = (orders) =>
+    orders.length ? `ORDER BY ${orders.join(', ')}` : ``;
+
+const simpleFilterLength = async (pgEnv, view_id, options) => {
+  const db = await getDb(pgEnv);
+  const {table_schema, table_name} = await getDataTableFromViewId(db, view_id)
+
+  const {filter = {}, exclude = {}, groupBy = [], having = [], orderBy = [], aggregatedLen = false} = JSON.parse(options);
+
+  const sql = aggregatedLen ?
+      `
+      with t as (
+      SELECT ${groupBy.length ? `${groupBy.join(', ')},` : ``} count(1) numRows
+      FROM ${table_schema}.${table_name} 
+          ${ handleFilters(filter, exclude) }
+          ${ handleGroupBy(groupBy) }
+          ${ handleHaving(having) }
+          )
+      SELECT count(1) numRows from t;
+    ` :
+      `
+      SELECT count(1) numRows
+      FROM ${table_schema}.${table_name} 
+          ${ handleFilters(filter, exclude) }
+          ${ handleGroupBy(groupBy) }
+          ${ handleHaving(having) }
+    `;
+
+  const {rows} = await db.query(sql);
+
+  return _.get(rows, [0, 'numrows'], 0);
+};
+
+const simpleFilter = async (pgEnv, view_id, options, attributes) => {
+  const db = await getDb(pgEnv);
+  const {table_schema, table_name} = await getDataTableFromViewId(db, view_id)
+
+  const {filter = {}, exclude = {}, groupBy = [], having = [], orderBy = []} = JSON.parse(options);
+
+  const sql = `
+        SELECT ${attributes.join(', ')}
+        FROM ${table_schema}.${table_name} 
+            ${ handleFilters(filter, exclude) }
+            ${ handleGroupBy(groupBy) }
+            ${ handleHaving(having) }
+            ${ handleOrderBy(orderBy) }
+            `;
+
+  console.log(sql)
+  const {rows} = await db.query(sql);
+
+
+  return rows;
+};
+
 module.exports = {
   listPgEnvs,
 
@@ -701,4 +811,7 @@ module.exports = {
   getSourceMetaData,
 
   getSourceIdsByName,
+
+  simpleFilterLength,
+  simpleFilter
 };

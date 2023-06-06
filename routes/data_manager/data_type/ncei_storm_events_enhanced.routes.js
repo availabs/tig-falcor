@@ -8,7 +8,8 @@ const {
     eventsByType,
     enhancedNCEILossByYearByType,
     eventsMappingToNRICategories,
-    getLtsView
+    enhancedNCEILossByGeoid,
+    enhancedNCEINormalizedCount
 } = require("../controller/data_type_controller");
 
 module.exports = [
@@ -169,7 +170,66 @@ module.exports = [
                 throw err;
             }
         },
-    }
+    },
+
+    {
+        route: `ncei_storm_events_enhanced[{keys:pgEnvs}].source[{keys:sourceIds}].view[{keys:viewIds}].lossByGeoid[{keys:geoids}][{keys:groupBy}]`,
+        get: async function (pathSet) {
+            try {
+                const {pgEnvs, sourceIds, viewIds, geoids, groupBy} = pathSet;
+                const result = [];
+
+                for (const pgEnv of pgEnvs) {
+                    for (const sourceId of sourceIds) {
+                        for (const viewId of viewIds) {
+                            for (const geoid of geoids) {
+                                for (const gb of groupBy) {
+                                    const rows = await enhancedNCEILossByGeoid(pgEnv, sourceId, viewId, [geoid], gb);
+                                    const filteredRes =  _.get(rows.find(r => r.source_id === sourceId && r.view_id === viewId), 'rows', [])
+
+                                    result.push({
+                                        path: ['ncei_storm_events_enhanced', pgEnv, 'source', sourceId, 'view', viewId, 'lossByGeoid', geoid, gb],
+                                        value: $atom(filteredRes)
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return result;
+            } catch (err) {
+                console.error(err);
+                throw err;
+            }
+        },
+    },
+    {
+        route: `ncei_storm_events_enhanced[{keys:pgEnvs}].view[{keys:viewIds}].normalized_event_count`,
+        get: async function (pathSet) {
+            try {
+                const {pgEnvs, sourceIds, viewIds, geoids, groupBy} = pathSet;
+                const result = [];
+
+                for (const pgEnv of pgEnvs) {
+                    for (const viewId of viewIds) {
+                        const rows = await enhancedNCEINormalizedCount(pgEnv, viewId);
+                        const filteredRes =  _.get(rows.find(r => r.view_id === viewId), 'rows', [])
+
+                        result.push({
+                            path: ['ncei_storm_events_enhanced', pgEnv,'view', viewId, 'normalized_event_count'],
+                            value: $atom(filteredRes)
+                        });
+                    }
+                }
+
+                return result;
+            } catch (err) {
+                console.error(err);
+                throw err;
+            }
+        },
+    },
 
 
 ];
