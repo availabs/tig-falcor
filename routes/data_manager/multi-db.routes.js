@@ -705,6 +705,7 @@ module.exports = [
           for (const viewId of viewIds) {
             for (const option of options) {
               const rows = await simpleFilter(pgEnv, viewId, option, attributes);
+              console.log('dama viewData option', option, rows)
               indices.forEach(i => {
                 attributes.forEach(attribute => {
                   const modifiedName = attribute.includes(' as ') ? attribute.split(' as ')[1] : attribute;
