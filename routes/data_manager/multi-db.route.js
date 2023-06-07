@@ -94,6 +94,7 @@ module.exports = [
       try {
         const [, pgEnvs] = pathSet;
 
+        console.log("dama[{keys:pgEnvs}].sources.length");
         const result = [];
 
         for (const pgEnv of pgEnvs) {
@@ -117,6 +118,7 @@ module.exports = [
     route: `dama[{keys:pgEnvs}].sources.byIndex[{integers:indices}]`,
     get: async function(pathSet) {
       //console.log(pathSet);
+      console.log("dama[{keys:pgEnvs}].sources.byIndex[{integers:indices}]");
       try {
         const [, pgEnvs] = pathSet;
 
@@ -151,6 +153,7 @@ module.exports = [
       try {
         const [, pgEnvs, , , sourceIds, , attributes] = pathSet;
 
+        console.log("pgEnvs, , , sourceIds, , attributes", pgEnvs, sourceIds, attributes);
         const result = [];
 
         for (const pgEnv of pgEnvs) {
@@ -185,6 +188,7 @@ module.exports = [
 
     set: async function(jsonGraph) {
       try {
+        console.log("SET\n\npgEnvs, , , sourceIds, , attributes", pgEnvs, sourceIds, attributes);
         const pgEnvs = Object.keys(jsonGraph.dama);
 
         const result = [];
@@ -241,6 +245,7 @@ module.exports = [
     route: `dama[{keys:pgEnvs}].sources.byId[{keys:sourceIds}].views.byIndex[{integers:viewIndexes}]`,
     get: async function(pathSet) {
       try {
+        console.log("dama[{keys:pgEnvs}].sources.byId[{keys:sourceIds}].views.byIndex[{integers:viewIndexes}]");
         const [, pgEnvs, , , sourceIds, , , viewIndexes] = pathSet;
 
         const result = [];
@@ -290,6 +295,7 @@ module.exports = [
   {
     route: "dama[{keys:pgEnvs}].sources.byId[{keys:sourceIds}].dependents",
     get: async function(pathSet) {
+      console.log("dama[{keys:pgEnvs}].sources.byId[{keys:sourceIds}].dependents");
       try {
         const { pgEnvs, sourceIds } = pathSet;
         const result = [];
