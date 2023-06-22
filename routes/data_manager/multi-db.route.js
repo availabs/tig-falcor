@@ -188,7 +188,6 @@ module.exports = [
 
     set: async function(jsonGraph) {
       try {
-        console.log("SET\n\npgEnvs, , , sourceIds, , attributes", pgEnvs, sourceIds, attributes);
         const pgEnvs = Object.keys(jsonGraph.dama);
 
         const result = [];
