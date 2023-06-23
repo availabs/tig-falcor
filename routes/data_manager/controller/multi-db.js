@@ -318,10 +318,10 @@ const getViewMeta = async (db, pgEnv, viewId) => {
     )
 
     select int_id_column_name, v.table_schema, v.table_name from get_pkey
-    join data_manager.views as v on v.view_id = get_pkey.view_id 
+    join data_manager.views as v on v.view_id = get_pkey.view_id
   `)
 
-  
+
   //console.time('getViewMeta')
   let qResult = await db.query(viewMetaQ, [viewId]);
   //console.timeEnd('getViewMeta')
@@ -345,12 +345,12 @@ const getViewMeta = async (db, pgEnv, viewId) => {
 
 const queryViewTabledataLength = async (pgEnv, viewId) => {
   const db = await getDb(pgEnv);
-  const { 
+  const {
     table_schema,
-    table_name, 
-    int_id_column_name 
+    table_name,
+    int_id_column_name
   } = await getViewMeta(db,pgEnv,viewId)
-  
+
   const getTableRowCount = pgFormat(
     `SELECT COUNT(1) as num_rows from %I.%I`,
       table_schema,
@@ -368,12 +368,12 @@ const queryViewTabledataLength = async (pgEnv, viewId) => {
 const queryViewTabledataIndices = async (pgEnv, viewId) => {
   const db = await getDb(pgEnv);
   //console.log('query view table indexes')
-  const { 
+  const {
     table_schema,
-    table_name, 
-    int_id_column_name 
+    table_name,
+    int_id_column_name
   } = await getViewMeta(db,pgEnv,viewId)
-  
+
   const getTableRowCount = pgFormat(
     `SELECT %I as id from %I.%I ORDER BY %I asc`,
       int_id_column_name,
@@ -392,12 +392,20 @@ const queryViewTabledataIndices = async (pgEnv, viewId) => {
 const queryViewTabledataById = async (pgEnv, viewId, intIds, attributes) => {
   const db = await getDb(pgEnv);
   console.log('query view table data')
-  const { 
+  const {
     table_schema,
-    table_name, 
-    int_id_column_name 
+    table_name,
+    int_id_column_name
   } = await getViewMeta(db,pgEnv,viewId)
-  
+
+  let getWKB = false;
+  attributes = [...attributes].filter(a => {
+    if (a === "wkb_geometry") {
+      getWKB = true;
+      return false;
+    }
+    return true;
+  })
 
   const selectCols = _.uniq([int_id_column_name, ...attributes]);
 
@@ -406,7 +414,8 @@ const queryViewTabledataById = async (pgEnv, viewId, intIds, attributes) => {
   const dataQ = dedent(
     pgFormat(
       `
-        SELECT ${selectCols.map(() => "%I").join(", ")}
+        SELECT ${ selectCols.map(() => "%I").join(", ") }
+          ${ getWKB ? ", ST_asGeoJSON(wkb_geometry) AS wkb_geometry" : "" }
           FROM %I.%I
             INNER JOIN (
               VALUES ${idsList}
@@ -737,7 +746,7 @@ const simpleFilterLength = async (pgEnv, view_id, options) => {
       `
       with t as (
       SELECT ${groupBy.length ? `${groupBy.join(', ')},` : ``} count(1) numRows
-      FROM ${table_schema}.${table_name} 
+      FROM ${table_schema}.${table_name}
           ${ handleFilters(filter, exclude) }
           ${ handleGroupBy(groupBy) }
           ${ handleHaving(having) }
@@ -746,7 +755,7 @@ const simpleFilterLength = async (pgEnv, view_id, options) => {
     ` :
       `
       SELECT count(1) numRows
-      FROM ${table_schema}.${table_name} 
+      FROM ${table_schema}.${table_name}
           ${ handleFilters(filter, exclude) }
           ${ handleGroupBy(groupBy) }
           ${ handleHaving(having) }
@@ -765,7 +774,7 @@ const simpleFilter = async (pgEnv, view_id, options, attributes) => {
 
   const sql = `
         SELECT ${attributes.join(', ')}
-        FROM ${table_schema}.${table_name} 
+        FROM ${table_schema}.${table_name}
             ${ handleFilters(filter, exclude) }
             ${ handleGroupBy(groupBy) }
             ${ handleHaving(having) }
@@ -797,12 +806,12 @@ module.exports = {
   queryViewTabledataLength,
   queryViewTabledataIndices,
   queryViewTabledataById,
-  
+
   getViewDependencies,
   getViewDependents,
   getViewDependencySubgraph,
 
-  
+
   getEtlContext,
   getEtlContextsLatestEventByDamaSourceId,
 
