@@ -54,11 +54,11 @@ const processChunks = async (geoidsChunks, years, censusKeys) => {
     const db = await getDb(pgEnv);
     const t = await db.query(
       "select geoid from geo.tl_2017_county_74 where statefp in ($1)",
-      [geoids]
+      [geoids.map(String)]
     );
     const v = await db.query(
       "select geoid from geo.tl_2017_tract_73 where statefp in ($1)",
-      [geoids]
+      [geoids.map(String)]
     );
 
     // let geo = [
