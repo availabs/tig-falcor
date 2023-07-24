@@ -1,9 +1,9 @@
 var { get } = require("lodash");
 
 const falcorGraph = require("./test/graph");
-// const { listPgEnvs, getDb } = require("../databases");
+const { listPgEnvs, getDb } = require("./routes/data_manager/databases");
 
-// const pgEnv = 'tig_dama_dev';
+const pgEnv = "tig_dama_dev";
 
 const chunkSize = 1;
 const geoids = [34, 36, "09"];
@@ -45,26 +45,34 @@ const processChunks = async (geoidsChunks, years, censusKeys) => {
       method: "get"
     };
 
-    const t = await falcorGraph.respond({
-      queryStringParameters: getCountiesEvent
-    });
-    const v = await falcorGraph.respond({
-      queryStringParameters: getTractsEvent
-    });
-    // const db = await getDb(pgEnv)
-    // const v = await db.query(`select geoid from geo.tl_2017_tract_73 where statefp in ('36','34')`);
+    // const t = await falcorGraph.respond({
+    //   queryStringParameters: getCountiesEvent
+    // });
+    // const v = await falcorGraph.respond({
+    //   queryStringParameters: getTractsEvent
+    // });
+    const db = await getDb(pgEnv);
+    const t = await db.query(
+      "select geoid from geo.tl_2017_county_74 where statefp in ($1)",
+      [geoids]
+    );
+    const v = await db.query(
+      "select geoid from geo.tl_2017_tract_73 where statefp in ($1)",
+      [geoids]
+    );
 
-    let geo = [
-      ...(geoids || []).reduce((a, c) => {
-        a = [
-          ...a,
-          ...get(t, ["jsonGraph", "geo", c, "counties", "value"], []),
-          ...get(v, ["jsonGraph", "geo", c, "tracts", "value"], [])
-        ];
-        return a;
-      }, new Set())
-    ];
+    // let geo = [
+    //   ...(geoids || []).reduce((a, c) => {
+    //     a = [
+    //       ...a,
+    //       ...get(t, ["jsonGraph", "geo", c, "counties", "value"], []),
+    //       ...get(v, ["jsonGraph", "geo", c, "tracts", "value"], [])
+    //     ];
+    //     return a;
+    //   }, new Set())
+    // ];
 
+    let geo = new Set([...t, ...v]);
     // console.log("geo", geo, geoids);
     const getEvent = {
       paths: [["acs", geo, years, censusKeys]],
