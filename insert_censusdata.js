@@ -32,18 +32,18 @@ const geoidsChunks = chunkArray(geoids, chunkSize);
 const processChunks = async (geoidsChunks, years, censusKeys) => {
   let currentChunk = 0;
 
-  for (let geoids of geoidsChunks) {
+  // for (let geoids of geoidsChunks) {
     console.log(
       `\n\n\n  ------------- Started Chunk: ${currentChunk}: ---------- \n\n\n`
     );
-    const getCountiesEvent = {
-      paths: [["geo", geoids.map(String), "counties"]],
-      method: "get"
-    };
-    const getTractsEvent = {
-      paths: [["geo", geoids.map(String), "tracts"]],
-      method: "get"
-    };
+    // const getCountiesEvent = {
+    //   paths: [["geo", geoids.map(String), "counties"]],
+    //   method: "get"
+    // };
+    // const getTractsEvent = {
+    //   paths: [["geo", geoids.map(String), "tracts"]],
+    //   method: "get"
+    // };
 
     // const t = await falcorGraph.respond({
     //   queryStringParameters: getCountiesEvent
@@ -53,12 +53,10 @@ const processChunks = async (geoidsChunks, years, censusKeys) => {
     // });
     const db = await getDb(pgEnv);
     const t = await db.query(
-      "select geoid from geo.tl_2017_county_74 where statefp in ($1)",
-      [geoids.map(String)]
+      "select geoid from geo.tl_2017_county_74 where statefp = ANY(ARRAY['34', '36', '09']::int[]);"
     );
     const v = await db.query(
-      "select geoid from geo.tl_2017_tract_73 where statefp in ($1)",
-      [geoids.map(String)]
+      "select geoid from geo.tl_2017_tract_73 where statefp = ANY(ARRAY['34', '36', '09']::int[]);"
     );
 
     // let geo = [
@@ -85,7 +83,7 @@ const processChunks = async (geoidsChunks, years, censusKeys) => {
     );
     currentChunk++;
   }
-};
+// };
 
 processChunks(geoidsChunks, years, censusKeys)
   .then(() => {
