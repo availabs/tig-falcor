@@ -610,8 +610,6 @@ const getIntersections = (geoids, years, geolevels) => {
   years = years.map(y => +`${ y.toString().slice(0, 3) }0`);
   geolevels = geolevels.map(gl => get(GEO_LEVEL_MAP, gl, gl));
 
-  console.log("inner call years\n\n\n", years);
-  console.log("inner call geolevels\n\n\n", geolevels);
   const sql = `
     SELECT geoid2 AS intersection, year, geoid1 AS geoid, type2 AS geolevel
     FROM geo.geo_lookup

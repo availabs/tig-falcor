@@ -1,9 +1,12 @@
 var { get } = require("lodash");
 
 const falcorGraph = require("./test/graph");
+// const { listPgEnvs, getDb } = require("../databases");
+
+// const pgEnv = 'tig_dama_dev';
 
 const chunkSize = 1;
-const geoids = [36, 34, "09"];
+const geoids = [34, 36, "09"];
 const years = [2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019];
 const censusKeys = [
   "B02001_001E",
@@ -33,7 +36,6 @@ const processChunks = async (geoidsChunks, years, censusKeys) => {
     console.log(
       `\n\n\n  ------------- Started Chunk: ${currentChunk}: ---------- \n\n\n`
     );
-
     const getCountiesEvent = {
       paths: [["geo", geoids.map(String), "counties"]],
       method: "get"
@@ -49,6 +51,8 @@ const processChunks = async (geoidsChunks, years, censusKeys) => {
     const v = await falcorGraph.respond({
       queryStringParameters: getTractsEvent
     });
+    // const db = await getDb(pgEnv)
+    // const v = await db.query(`select geoid from geo.tl_2017_tract_73 where statefp in ('36','34')`);
 
     let geo = [
       ...(geoids || []).reduce((a, c) => {
@@ -61,7 +65,7 @@ const processChunks = async (geoidsChunks, years, censusKeys) => {
       }, new Set())
     ];
 
-    console.log("geo", geo, geoids);
+    // console.log("geo", geo, geoids);
     const getEvent = {
       paths: [["acs", geo, years, censusKeys]],
       method: "get"
