@@ -1,9 +1,9 @@
-var { get } = require("lodash");
+var { get, map } = require("lodash");
 
 const falcorGraph = require("./test/graph");
 const { listPgEnvs, getDb } = require("./routes/data_manager/databases");
 
-const pgEnv = "tig_dama_dev";
+const pgEnv = "pan";
 
 const chunkSize = 1;
 const geoids = [34, 36, "09"];
@@ -52,13 +52,22 @@ const processChunks = async (geoidsChunks, years, censusKeys) => {
     //   queryStringParameters: getTractsEvent
     // });
     const db = await getDb(pgEnv);
-    const t = await db.query(
-      "select geoid from geo.tl_2017_county_74 where statefp = ANY(ARRAY['34', '36', '09']::int[]);"
+    let t = await db.query(
+      "select geoid from geo.tl_2017_county_1078 where statefp = ANY(ARRAY['34', '36', '09']::int[]);"
     );
-    const v = await db.query(
-      "select geoid from geo.tl_2017_tract_73 where statefp = ANY(ARRAY['34', '36', '09']::int[]);"
+    let v = await db.query(
+      "select geoid from geo.tl_2017_tract_990 where statefp = ANY(ARRAY['34', '36', '09']::int[]);"
     );
 
+    if (t && t.rows) {
+      t = map(get(t, "rows"), "geoid");
+    }
+
+    if (v && v.rows) {
+      v = map(get(v, "rows"), "geoid");
+    }
+    console.log("t", t);
+    console.log("v", v);
     // let geo = [
     //   ...(geoids || []).reduce((a, c) => {
     //     a = [
