@@ -1,4 +1,4 @@
-const db_service = require("./hazmit_db")
+const db_service = require("./tig_db")
 
 const get = require("lodash.get"),
   d3array = require("d3-array");
@@ -70,7 +70,7 @@ module.exports = {
   setDataById: (id, data, user) => {
     const sql = `
       UPDATE dms.data_items
-      SET data = $1,
+      SET data = COALESCE(data,'{}') || $1,
         updated_at = NOW(),
         updated_by = $2
       WHERE id = $3
