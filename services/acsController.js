@@ -93,7 +93,9 @@ const getAcsData = (missingGeoidsAndYears, censusKeys) => {
       }
     }
   }
-// requests are chunked here to limit the number of concurrent requests sent to the ACS API at once
+
+// requests are chunked here to limit the number of concurrent requests sent to the ACS API at 
+  console.log('acs requests', requests)
   return BlueBird.map(requests, ([geoid, year, url]) => {
     return retryFetch(url)
       .then(res => processAcsData(geoid, year, censusKeys.length, res))
@@ -121,7 +123,7 @@ const insertNewData = data => {
 
 const MAX_RETRIES = 5;
 const retryFetch = (url, retries = 0) => {
-// console.log("RETRY FETCH:", url, retries);
+  console.log("ACS RETRY FETCH:", url, retries);
   return new Promise((resolve, reject) => {
     if (retries >= MAX_RETRIES) {
       return resolve([]);
