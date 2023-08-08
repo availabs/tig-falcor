@@ -803,6 +803,7 @@ module.exports = {
   getViewAttributes,
   setViewAttributes,
 
+  getViewMeta,
   queryViewTabledataLength,
   queryViewTabledataIndices,
   queryViewTabledataById,
