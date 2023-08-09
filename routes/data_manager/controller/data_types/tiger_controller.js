@@ -28,17 +28,15 @@ async function geoLevelContains(pgEnv, viewIds, geoids, years, geolevels) {
     AND geoid LIKE ANY(
       ARRAY(
         SELECT u || '%' 
-        FROM UNNEST($3::INT[]) AS t(u)
+        FROM UNNEST($3::TEXT[]) AS t(u)
       )
     )`;
+
     let { rows } = await db.query(query, [years, geolevels, geoids]);
     rows = chain(rows)
-      .groupBy(entry => {
-        const matchingGeoid = geoids.find(geoid =>
-          entry.geoid.startsWith(geoid)
-        );
-        return matchingGeoid || [];
-      })
+      .groupBy(
+        entry => geoids.find(geoid => entry.geoid.startsWith(geoid)) || []
+      )
       .mapValues(geoidGroup => groupBy(geoidGroup, "year"))
       .mapValues(geoidGroup =>
         mapValues(geoidGroup, yearGroup => groupBy(yearGroup, "tiger_type"))
