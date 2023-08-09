@@ -40,14 +40,14 @@ const checkRows = (geoids, years, censusKeys, rows) => {
     const received = {},
       missingGeoidsAndYears = {},
       missingCensusKeys = {};
-    rows.forEach(r => {
+    rows.forEach((r) => {
       addTo(received, r.geoid, {});
       addTo(received[r.geoid], r.year, {});
       addTo(received[r.geoid][r.year], r.censvar, true);
     });
-    geoids.forEach(geoid => {
-      years.forEach(year => {
-        censusKeys.forEach(censvar => {
+    geoids.forEach((geoid) => {
+      years.forEach((year) => {
+        censusKeys.forEach((censvar) => {
           if (!get(received, [geoid, year, censvar], false)) {
             addTo(missingGeoidsAndYears, geoid, {});
             addTo(missingGeoidsAndYears[geoid], year, true);
@@ -59,7 +59,7 @@ const checkRows = (geoids, years, censusKeys, rows) => {
     return getAcsData(
       missingGeoidsAndYears,
       Object.keys(missingCensusKeys)
-    ).then(data => insertNewData(data).then(() => [].concat(data, rows)));
+    ).then((data) => insertNewData(data).then(() => [].concat(data, rows)));
   }
   return rows;
 };
@@ -104,12 +104,12 @@ const getAcsData = (missingGeoidsAndYears, censusKeys) => {
   return BlueBird.map(
     requests,
     ([geoid, year, url]) => {
-      return retryFetch(url).then(res =>
+      return retryFetch(url).then((res) =>
         processAcsData(geoid, year, censusKeys.length, res)
       );
     },
     { concurrency: 10 }
-  ).then(data => flatten(data));
+  ).then((data) => flatten(data));
 };
 const processAcsData = (geoid, year, numKeys, res) => {
   if (!res.length) return [];
@@ -122,18 +122,18 @@ const processAcsData = (geoid, year, numKeys, res) => {
         geoid,
         year,
         censvar: k,
-        value: +res[i][ii]
+        value: +res[i][ii],
       }))
     );
   }
   return data;
 };
-const insertNewData = data => {
+const insertNewData = (data) => {
   if (!data.length) return Promise.resolve();
   const sql = `
     INSERT INTO census_data.censusdata(geoid, year, censvar, value)
     VALUES ${data.map(
-      d => `('${d.geoid}', ${d.year}, '${d.censvar}', ${d.value})`
+      (d) => `('${d.geoid}', ${d.year}, '${d.censvar}', ${d.value})`
     )}
   `;
   return db_service.promise(sql);
@@ -151,7 +151,7 @@ const retryFetch = (url, retries = 0) => {
       .catch(() => resolve(sleep(500).then(() => retryFetch(url, ++retries))));
   });
 };
-const sleep = ms => new Promise((resolve, reject) => setTimeout(resolve, ms));
+const sleep = (ms) => new Promise((resolve, reject) => setTimeout(resolve, ms));
 
 const makeBaseCensusApiUrl = (year, censusKeys, isSubject = false) => {
   return (
@@ -162,14 +162,14 @@ const makeBaseCensusApiUrl = (year, censusKeys, isSubject = false) => {
   );
 };
 
-const getState = geoid => geoid.slice(0, 2),
-  getCounty = geoid => geoid.slice(2, 5),
-  getPlace = geoid => geoid.slice(2, 7),
-  getCosub = geoid => geoid.slice(5, 10),
-  getTract = geoid => geoid.slice(5, 11),
-  getBlockground = geoid => geoid.slice(11),
-  getOther = geoid => geoid.slice(7),
-  stateForOther = geoid => geoid.slice(5, 7);
+const getState = (geoid) => geoid.slice(0, 2),
+  getCounty = (geoid) => geoid.slice(2, 5),
+  getPlace = (geoid) => geoid.slice(2, 7),
+  getCosub = (geoid) => geoid.slice(5, 10),
+  getTract = (geoid) => geoid.slice(5, 11),
+  getBlockground = (geoid) => geoid.slice(11),
+  getOther = (geoid) => geoid.slice(7),
+  stateForOther = (geoid) => geoid.slice(5, 7);
 
 const makeUrlFor = (geoid, year) => {
   if (geoid.startsWith("unsd")) {
@@ -209,7 +209,21 @@ const makeUrlFor = (geoid, year) => {
 
 const chunkSize = 1;
 const geoids = [34, 36, "09"];
-const years = [2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019];
+const years = [
+  2010,
+  2011,
+  2012,
+  2013,
+  2014,
+  2015,
+  2016,
+  2017,
+  2018,
+  2019,
+  2020,
+  2021,
+  2022
+];
 const censusKeys = [
   "B02001_001E",
   "B02001_004E",
@@ -234,7 +248,7 @@ const geoidsChunks = chunkArray(geoids, chunkSize);
 const processChunks = async (geoidsChunks, years, censusKeys) => {
   let currentChunk = 0;
 
-  // for (let geoids of geoidsChunks) {
+  /**  
   const db = await getDb(pgEnv);
   let t = await db.query(
     "select geoid from geo.tl_2017_county_74 where statefp = ANY(ARRAY['34', '36', '09']::int[]);"
@@ -252,33 +266,63 @@ const processChunks = async (geoidsChunks, years, censusKeys) => {
   }
 
   let geo = new Set([...t, ...v]);
-  const geoChunks = chunkArray([...geo], 1000);
-  console.log("geo", geoChunks);
+   */
+  const tigCounties = [
+    "09001",
+    "09005",
+    "09009",
+    "34037",
+    "34039",
+    "34023",
+    "34017",
+    "34025",
+    "34031",
+    "34035",
+    "34029",
+    "34027",
+    "34013",
+    "34003",
+    "34041",
+    "34019",
+    "19017",
+    "18003",
+    "34021",
+    "36005",
+    "36047",
+    "36061",
+    "36081",
+    "36085",
+    "36059",
+    "36103",
+    "36027",
+    "36071",
+    "36079",
+    "36087",
+    "36105",
+    "36111",
+    "36119"
+  ];
+  // const geoChunks = chunkArray([...geo], 1000);
+  const tigChunks = chunkArray(tigCounties, 15);
+  console.log("geo", tigChunks);
 
-  for (let elem of geoChunks) {
+  for (let elem of tigChunks) {
     console.log("new elem", elem);
     console.log(
       `\n\n\n  ------------- Started Chunk: ${currentChunk}: ---------- \n\n\n`
     );
-    // const getEvent = {
-    //   paths: [["acs", g, years, censusKeys]],
-    //   method: "get"
-    // };
     await CensusAcsByGeoidByYearByKey(elem, years, censusKeys);
     console.log(
       `\n\n\n  ------------- Ended Chunk: ${currentChunk}: ---------- \n\n\n`
     );
     currentChunk++;
   }
-
-  // await falcorGraph.respond({ queryStringParameters: getEvent });
 };
-// };
 
 processChunks(geoidsChunks, years, censusKeys)
   .then(() => {
     console.time("Completed");
   })
-  .catch(err => {
+  .catch((err) => {
     console.error("Error occurred during processing:", err);
   });
