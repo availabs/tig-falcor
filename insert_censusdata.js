@@ -222,7 +222,6 @@ const years = [
   2019,
   2020,
   2021,
-  2022,
 ];
 const censusKeys = [
   "B02001_001E",
@@ -245,7 +244,7 @@ const chunkArray = (array, size) => {
 };
 
 const geoidsChunks = chunkArray(geoids, chunkSize);
-const processChunks = async (geoidsChunks, years, censusKeys) => {
+const processChunks = async (_, years, censusKeys) => {
   let currentChunk = 0;
 
   const tigCounties = [
@@ -283,7 +282,7 @@ const processChunks = async (geoidsChunks, years, censusKeys) => {
     "36111",
     "36119",
   ];
-  console.log("pgEnv", pgEnv);
+
   const db = await getDb(pgEnv);
   const source_id = 347;
   const view_id = 311;
@@ -291,7 +290,7 @@ const processChunks = async (geoidsChunks, years, censusKeys) => {
     `
     SELECT DISTINCT geoid
     FROM tiger.tl_s${source_id}_v${view_id}
-    WHERE year = ANY(ARRAY[2010, 2020]::INT[])
+    WHERE year = ANY(ARRAY[2010]::INT[])
     AND tiger_type = ANY(ARRAY['tract', 'county']::TEXT[])
     AND geoid LIKE ANY(
       ARRAY(
@@ -332,33 +331,81 @@ const processChunks = async (geoidsChunks, years, censusKeys) => {
       )
     )`
   );
-  // let v = await db.query(
-  //   "select geoid from geo.tl_2017_tract_73 where statefp = ANY(ARRAY['34', '36', '09']::int[]);"
-  // );
+  let v = await db.query(
+    `
+    SELECT DISTINCT geoid
+    FROM tiger.tl_s${source_id}_v${view_id}
+    WHERE year = ANY(ARRAY[2020]::INT[])
+    AND tiger_type = ANY(ARRAY['tract', 'county']::TEXT[])
+    AND geoid LIKE ANY(
+      ARRAY(
+        SELECT u || '%' 
+        FROM UNNEST(ARRAY['09001',
+        '09005',
+        '09009',
+        '34037',
+        '34039',
+        '34023',
+        '34017',
+        '34025',
+        '34031',
+        '34035',
+        '34029',
+        '34027',
+        '34013',
+        '34003',
+        '34041',
+        '34019',
+        '19017',
+        '18003',
+        '34021',
+        '36005',
+        '36047',
+        '36061',
+        '36081',
+        '36085',
+        '36059',
+        '36103',
+        '36027',
+        '36071',
+        '36079',
+        '36087',
+        '36105',
+        '36111',
+        '36119']::TEXT[]) AS t(u)
+      )
+    )`
+  );
 
   if (t && t.rows) {
     t = map(get(t, "rows"), "geoid");
+    v = map(get(v, "rows"), "geoid");
   }
 
-  // if (v && v.rows) {
-  //   v = map(get(v, "rows"), "geoid");
-  // }
+  // let geo = new Set(t || []);
 
-  let geo = new Set(t || []);
+  // const geoChunks = chunkArray([...geo], 1000);
+  const yearsChunk = chunkArray(years, 10);
+  // console.log("geo", geoChunks);
 
-  const geoChunks = chunkArray([...geo], 1000);
-  console.log("geo", geoChunks);
-
-  for (let elem of geoChunks) {
-    console.log("new elem", elem);
-    console.log(
-      `\n\n\n  ------------- Started Chunk: ${currentChunk}: ---------- \n\n\n`
-    );
-    await CensusAcsByGeoidByYearByKey(elem, years, censusKeys);
-    console.log(
-      `\n\n\n  ------------- Ended Chunk: ${currentChunk}: ---------- \n\n\n`
-    );
-    currentChunk++;
+  for (let [ind, year] of yearsChunk.entries()) {
+    let geoChunks = [];
+    if (ind === 0) {
+      geoChunks = chunkArray([...t], 1000);
+    } else if (ind === 1) {
+      geoChunks = chunkArray([...v], 1000);
+    }
+    for (let elem of geoChunks) {
+      console.log("new elem", elem);
+      console.log(
+        `\n\n\n  ------------- Started Chunk: ${currentChunk}: ---------- \n\n\n`
+      );
+      await CensusAcsByGeoidByYearByKey(elem, year, censusKeys);
+      console.log(
+        `\n\n\n  ------------- Ended Chunk: ${currentChunk}: ---------- \n\n\n`
+      );
+      currentChunk++;
+    }
   }
 };
 
