@@ -21,6 +21,9 @@ const {
   getViewDependencySubgraph,
 
   getEtlContext,
+  getEtlContextSourceIdsByIndex,
+  getEtlContextEventsById,
+  getEtlContextBySourceIds,
   getEtlContextsLatestEventByDamaSourceId,
   getDependentsSafetyCheck,
   getSourceMetaData,
@@ -382,7 +385,6 @@ module.exports = [
             attributes.forEach((attr) => {
               const v = _.get(d, [id, attr], null);
 
-              console.log(attr,v)
               result.push({
                 path: ["dama", pgEnv, "views", "byId", id, "attributes", attr],
                 value: typeof v === "object" ? $atom(v) : v, //$atom(value),
@@ -773,7 +775,104 @@ module.exports = [
     },
   },
   
+  {
+    route: `dama[{keys:pgEnvs}].etlContextsbyDamaSourceId[{keys:damaSourceIds}].length`,
+    get: async function(pathSet) {
+      try {
+        const [, pgEnvs, , damaSourceIds] = pathSet;
 
+        const result = [];
+
+        for (const pgEnv of pgEnvs) {
+          const ctxLengthBySourceId = await getEtlContextBySourceIds(
+            pgEnv,
+            damaSourceIds
+          );
+
+          for (const sourceId of damaSourceIds) {
+          const ctxLength = ctxLengthBySourceId[sourceId] || 0;
+
+            result.push({
+              path: [
+                "dama",
+                pgEnv,
+                "etlContextsbyDamaSourceId",
+                sourceId,
+                "length",
+              ],
+              value: +ctxLength,
+            });
+          }
+        }
+
+        return result;
+      } catch (err) {
+        console.error(err);
+        throw err;
+      }
+    }
+  },
+  {
+    route: `dama[{keys:pgEnvs}].etlContextsbyDamaSourceId[{keys:damaSourceId}].byIndex[{integers:indices}]`,
+    get: async function(pathSet) {
+      try {
+        const [, pgEnvs, , damaSourceId, , indices] = pathSet;
+        const result = [];
+
+        for (const pgEnv of pgEnvs) {
+          const idsByIdx = await getEtlContextSourceIdsByIndex(pgEnv, indices, +damaSourceId);
+          for (const ctxIdx of Object.keys(idsByIdx)) {
+            const id = idsByIdx[ctxIdx];
+            result.push({
+              path: ["dama", pgEnv, "etlContextsbyDamaSourceId", damaSourceId, "byIndex", +ctxIdx],
+              value: $ref(["dama", pgEnv, "etlContextsbyId", id]),
+            });
+          }
+        }
+
+        return result;
+      } catch (err) {
+        throw err;
+      }
+    }
+  },
+  {
+    route: `dama[{keys:pgEnvs}].etlContextsbyId[{keys:contextId}][{keys:attributes}]`,
+    get: async function(pathSet) {
+      try {
+        const [, pgEnvs, , contextId, attributes] = pathSet;
+        const result = [];
+
+        for (const pgEnv of pgEnvs) {
+          const etlContextEventByIds = await getEtlContextEventsById(
+            pgEnv,
+            contextId
+          );
+
+          for (const ctx of etlContextEventByIds) {
+            for (const attr of attributes) {
+              const v = _.get(ctx, [attr], null);
+
+              result.push({
+                path: [
+                  "dama",
+                  pgEnv,
+                  "etlContextsbyId",
+                  ctx?.etl_context_id,
+                  attr,
+                ],
+                value: typeof v === "object" ? $atom(v) : v,
+              });
+            }
+          }
+        }
+
+        return result;
+      } catch (err) {
+        throw err;
+      }
+    },
+  },
   {
     route: `dama[{keys:pgEnvs}].etlContexts.byDamaSourceId[{keys:damaSourceIds}]['RUNNING', 'STOPPED']`,
     get: async function(pathSet) {

@@ -269,6 +269,70 @@ const getViewAttributes = async (pgEnv, viewIds, attributes) => {
   return attrsById;
 };
 
+const getEtlContextSourceIdsByIndex = async (pgEnv, etlIndexes, source_id) => {
+  const min = etlIndexes[0];
+  const max = etlIndexes.length;
+  const sql = `
+      SELECT etl_context_id
+      FROM data_manager.etl_contexts
+      WHERE ( source_id = $1 )
+      LIMIT ${ max }
+      OFFSET ${ min };
+    ;
+  `;
+  const db = await getDb(pgEnv);
+
+  const { rows } = await db.query(sql, [source_id]);
+
+  const idsByIdx = rows.reduce((acc, { etl_context_id }, index) => {
+    acc[index] = +etl_context_id;
+    return acc;
+  }, {});
+
+  return idsByIdx;
+};
+
+const getEtlContextEventsById = async (
+  pgEnv,
+  etlContextId
+)  => {
+  const db = await getDb(pgEnv);
+
+  const sql = dedent(`
+    SELECT *
+    FROM data_manager.etl_contexts
+    WHERE ( etl_context_id = ANY($1::INT[]) )
+  `);
+
+  const { rows } = await db.query(sql, [etlContextId]);
+
+  return rows;
+}
+
+const getEtlContextBySourceIds = async (pgEnv, sourceIds) => {
+  const ctxBySourceSql = dedent(`
+    SELECT
+      COUNT(1) AS ctx_length, source_id
+      FROM data_manager.etl_contexts
+      WHERE ( source_id = ANY($1::INT[]) )
+      GROUP BY source_id
+    ;
+  `);
+
+  const db = await getDb(pgEnv);
+
+  const {
+    rows
+  } = await db.query(ctxBySourceSql, [sourceIds]);
+
+  const ctxLengthBySourceId = rows.reduce((acc, { source_id, ctx_length }) => {
+    acc[source_id] = ctx_length;
+    return acc;
+  }, {});
+
+  return ctxLengthBySourceId;
+}
+
 const setViewAttributes = async (pgEnv, updates) => {
   const id = Object.keys(updates);
 
@@ -604,6 +668,8 @@ async function getEtlContextsLatestEventByDamaSourceId(
 
   const db = await getDb(pgEnv);
 
+  console.log("\n\n\n\n\ndamaSourceIds", damaSourceIds);
+  console.log("\n\n\n\n\netlContextStatuses", etlContextStatuses);
   const sql = dedent(`
     SELECT
         etl_context_id,
@@ -814,6 +880,9 @@ module.exports = {
 
 
   getEtlContext,
+  getEtlContextSourceIdsByIndex,
+  getEtlContextEventsById,
+  getEtlContextBySourceIds,
   getEtlContextsLatestEventByDamaSourceId,
 
   getDependentsSafetyCheck,
